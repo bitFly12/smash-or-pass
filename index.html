@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smash or Pass - Cesaris Edition</title>
     <style>
+        /* Tutti gli stili CSS rimangono invariati */
         * {
             margin: 0;
             padding: 0;
@@ -597,10 +598,10 @@
                 <p>Scegli se stai caricando una foto di un ragazzo o una ragazza</p>
                 
                 <div class="gender-selection">
-                    <button class="gender-btn male" data-gender="male" onclick="selectGender('male')">
+                    <button class="gender-btn male" data-gender="male" id="maleBtn">
                         👦 Ragazzo
                     </button>
-                    <button class="gender-btn female" data-gender="female" onclick="selectGender('female')">
+                    <button class="gender-btn female" data-gender="female" id="femaleBtn">
                         👧 Ragazza
                     </button>
                 </div>
@@ -617,7 +618,7 @@
                 <h3>Step 2: Carica la tua foto</h3>
                 <p id="selected-gender-text">Stai caricando una foto di: <strong id="current-gender"></strong></p>
                 
-                <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-area" id="uploadArea">
                     <i>📷</i>
                     <h3>Clicca qui per selezionare una foto</h3>
                     <p>Oppure trascina il file qui</p>
@@ -665,10 +666,10 @@
             <div class="voting-interface">
                 <div class="gender-selection-vote">
                     <h3>Su chi vuoi votare?</h3>
-                    <button class="gender-btn male active" data-gender="male" onclick="selectVoteGender('male')">
+                    <button class="gender-btn male active" data-gender="male" id="voteMaleBtn">
                         👦 Ragazzi
                     </button>
-                    <button class="gender-btn female" data-gender="female" onclick="selectVoteGender('female')">
+                    <button class="gender-btn female" data-gender="female" id="voteFemaleBtn">
                         👧 Ragazze
                     </button>
                 </div>
@@ -718,24 +719,83 @@
         let voteHistory = JSON.parse(localStorage.getItem('voteHistory') || '{}');
         let currentHistoryFilter = 'all';
         
-        // Gestione delle tab
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                const tabId = tab.getAttribute('data-tab');
-                
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-                
-                tab.classList.add('active');
-                document.getElementById(`${tabId}-tab`).classList.add('active');
-                
-                if (tabId === 'vote') {
-                    loadPhotosForVoting();
-                } else if (tabId === 'history') {
-                    loadVoteHistory();
+        // Inizializza l'applicazione
+        document.addEventListener('DOMContentLoaded', function() {
+            initEventListeners();
+            loadPhotosForVoting();
+        });
+        
+        // Inizializza tutti gli event listener
+        function initEventListeners() {
+            // Gestione delle tab
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                    
+                    tab.classList.add('active');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                    
+                    if (tabId === 'vote') {
+                        loadPhotosForVoting();
+                    } else if (tabId === 'history') {
+                        loadVoteHistory();
+                    }
+                });
+            });
+            
+            // Gestione selezione genere per upload
+            document.getElementById('maleBtn').addEventListener('click', function() {
+                selectGender('male');
+            });
+            
+            document.getElementById('femaleBtn').addEventListener('click', function() {
+                selectGender('female');
+            });
+            
+            // Gestione selezione genere per votazione
+            document.getElementById('voteMaleBtn').addEventListener('click', function() {
+                selectVoteGender('male');
+            });
+            
+            document.getElementById('voteFemaleBtn').addEventListener('click', function() {
+                selectVoteGender('female');
+            });
+            
+            // Gestione selezione file
+            document.getElementById('fileInput').addEventListener('change', function(e) {
+                if (e.target.files.length) {
+                    handleFileSelection(e.target.files[0]);
                 }
             });
-        });
+            
+            // Gestione drag and drop
+            const uploadArea = document.getElementById('uploadArea');
+            
+            uploadArea.addEventListener('click', function() {
+                document.getElementById('fileInput').click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '#f0f4ff';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.backgroundColor = '';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '';
+                
+                if (e.dataTransfer.files.length) {
+                    handleFileSelection(e.dataTransfer.files[0]);
+                }
+            });
+        }
         
         // Gestione passaggi
         function goToStep(step) {
@@ -765,7 +825,7 @@
             }
         }
         
-        // Selezione genere per upload
+        // Selezione genere per upload - VERSIONE CORRETTA
         function selectGender(gender) {
             selectedGender = gender;
             
@@ -773,7 +833,12 @@
             document.querySelectorAll('#step1-content .gender-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            document.querySelector(`#step1-content .gender-btn[data-gender="${gender}"]`).classList.add('active');
+            
+            if (gender === 'male') {
+                document.getElementById('maleBtn').classList.add('active');
+            } else {
+                document.getElementById('femaleBtn').classList.add('active');
+            }
             
             // Abilita pulsante Avanti
             document.getElementById('nextToStep2').disabled = false;
@@ -783,7 +848,7 @@
                 gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza';
         }
         
-        // Selezione genere per votazione
+        // Selezione genere per votazione - VERSIONE CORRETTA
         function selectVoteGender(gender) {
             currentVoteGender = gender;
             
@@ -791,39 +856,16 @@
             document.querySelectorAll('.gender-selection-vote .gender-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            document.querySelector(`.gender-selection-vote .gender-btn[data-gender="${gender}"]`).classList.add('active');
+            
+            if (gender === 'male') {
+                document.getElementById('voteMaleBtn').classList.add('active');
+            } else {
+                document.getElementById('voteFemaleBtn').classList.add('active');
+            }
             
             // Ricarica le foto per il genere selezionato
             loadPhotosForVoting();
         }
-        
-        // Gestione selezione file
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            if (e.target.files.length) {
-                handleFileSelection(e.target.files[0]);
-            }
-        });
-        
-        // Gestione drag and drop
-        const uploadArea = document.getElementById('uploadArea');
-        
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.style.backgroundColor = '#f0f4ff';
-        });
-        
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.style.backgroundColor = '';
-        });
-        
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.style.backgroundColor = '';
-            
-            if (e.dataTransfer.files.length) {
-                handleFileSelection(e.dataTransfer.files[0]);
-            }
-        });
         
         function handleFileSelection(file) {
             if (!file.type.match('image.*')) {
@@ -923,7 +965,7 @@
             document.getElementById('uploadBtn').textContent = '🚀 Carica Foto';
         }
         
-        // Carica le foto per la votazione - FIXED: non mostra foto già votate
+        // Carica le foto per la votazione
         async function loadPhotosForVoting() {
             const loadingIndicator = document.getElementById('loadingIndicator');
             const singlePhotoView = document.getElementById('singlePhotoView');
@@ -943,9 +985,9 @@
 
                 // Filtra le foto già votate
                 const votedPhotoIds = Object.keys(voteHistory);
-                const availablePhotos = photos.filter(photo => !votedPhotoIds.includes(photo.id));
+                const availablePhotos = photos ? photos.filter(photo => !votedPhotoIds.includes(photo.id)) : [];
 
-                currentPhotos = availablePhotos || [];
+                currentPhotos = availablePhotos;
                 currentPhotoIndex = 0;
                 
                 if (currentPhotos.length === 0) {
@@ -1081,9 +1123,9 @@
             const historyList = document.getElementById('historyList');
             
             // Filtra le foto in base al filtro attivo
-            let filteredPhotos = photos;
+            let filteredPhotos = photos || [];
             if (currentHistoryFilter !== 'all') {
-                filteredPhotos = photos.filter(photo => voteHistory[photo.id] === currentHistoryFilter);
+                filteredPhotos = filteredPhotos.filter(photo => voteHistory[photo.id] === currentHistoryFilter);
             }
             
             if (filteredPhotos.length === 0) {
@@ -1186,19 +1228,6 @@
                 notification.classList.remove('show');
             }, 3000);
         }
-        
-        // Protezione base
-        document.addEventListener('keydown', function(e) {
-            if(e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) || (e.ctrlKey && e.key === 'u')) {
-                e.preventDefault();
-                return false;
-            }
-        });
-
-        // Inizializza la votazione al caricamento della pagina
-        document.addEventListener('DOMContentLoaded', function() {
-            loadPhotosForVoting();
-        });
     </script>
 </body>
 </html>
