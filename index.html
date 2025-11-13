@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smash or Pass - Cesaris Edition</title>
     <style>
-        /* Tutti gli stili CSS rimangono invariati */
         * {
             margin: 0;
             padding: 0;
@@ -559,6 +558,15 @@
             -ms-user-select: none;
             user-select: none;
         }
+        
+        .debug-info {
+            background: #f8f9fa;
+            border-left: 4px solid #2a5298;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -679,6 +687,12 @@
                         Caricamento foto in corso...
                     </div>
                 </div>
+                
+                <!-- Debug info -->
+                <div class="debug-info" id="debugInfo" style="display: none;">
+                    <h4>Info Debug:</h4>
+                    <p id="debugText"></p>
+                </div>
             </div>
         </div>
         
@@ -755,7 +769,7 @@
                 selectGender('female');
             });
             
-            // Gestione selezione genere per votazione
+            // Gestione selezione genere per votazione - FIXED
             document.getElementById('voteMaleBtn').addEventListener('click', function() {
                 selectVoteGender('male');
             });
@@ -825,7 +839,7 @@
             }
         }
         
-        // Selezione genere per upload - VERSIONE CORRETTA
+        // Selezione genere per upload
         function selectGender(gender) {
             selectedGender = gender;
             
@@ -848,9 +862,11 @@
                 gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza';
         }
         
-        // Selezione genere per votazione - VERSIONE CORRETTA
+        // Selezione genere per votazione - FIXED VERSION
         function selectVoteGender(gender) {
             currentVoteGender = gender;
+            
+            console.log("Genere selezionato per votazione:", gender);
             
             // Aggiorna pulsanti
             document.querySelectorAll('.gender-selection-vote .gender-btn').forEach(btn => {
@@ -965,28 +981,48 @@
             document.getElementById('uploadBtn').textContent = '🚀 Carica Foto';
         }
         
-        // Carica le foto per la votazione
+        // CARICA FOTO PER VOTAZIONE - VERSIONE COMPLETAMENTE RISCRITTA
         async function loadPhotosForVoting() {
-            const loadingIndicator = document.getElementById('loadingIndicator');
             const singlePhotoView = document.getElementById('singlePhotoView');
+            const debugInfo = document.getElementById('debugInfo');
+            const debugText = document.getElementById('debugText');
             
-            loadingIndicator.style.display = 'block';
-            singlePhotoView.innerHTML = '';
-            singlePhotoView.appendChild(loadingIndicator);
-
+            // Mostra il loading
+            singlePhotoView.innerHTML = '<div class="loading">Caricamento foto in corso...</div>';
+            debugInfo.style.display = 'none';
+            
             try {
+                console.log("Caricamento foto per genere:", currentVoteGender);
+                
+                // Query per ottenere le foto
                 const { data: photos, error } = await supabase
                     .from('photos')
                     .select('*')
                     .eq('gender', currentVoteGender)
                     .order('created_at', { ascending: false });
                 
-                if (error) throw error;
+                if (error) {
+                    console.error("Errore Supabase:", error);
+                    throw error;
+                }
 
+                console.log("Foto trovate:", photos);
+                
                 // Filtra le foto già votate
                 const votedPhotoIds = Object.keys(voteHistory);
                 const availablePhotos = photos ? photos.filter(photo => !votedPhotoIds.includes(photo.id)) : [];
 
+                console.log(`Foto ${currentVoteGender} disponibili dopo filtro:`, availablePhotos.length);
+                
+                // Mostra info debug
+                debugText.innerHTML = `
+                    <strong>Genere selezionato:</strong> ${currentVoteGender}<br>
+                    <strong>Foto trovate nel database:</strong> ${photos ? photos.length : 0}<br>
+                    <strong>Foto già votate:</strong> ${votedPhotoIds.length}<br>
+                    <strong>Foto disponibili per la votazione:</strong> ${availablePhotos.length}
+                `;
+                debugInfo.style.display = 'block';
+                
                 currentPhotos = availablePhotos;
                 currentPhotoIndex = 0;
                 
@@ -997,7 +1033,16 @@
                 }
             } catch (error) {
                 console.error('Errore nel caricamento delle foto:', error);
-                showNotification('Errore nel caricamento delle foto', true);
+                showNotification('Errore nel caricamento delle foto: ' + error.message, true);
+                
+                // Mostra un messaggio di errore specifico
+                singlePhotoView.innerHTML = `
+                    <div class="no-photos">
+                        <h3>Errore di caricamento</h3>
+                        <p>Impossibile caricare le foto ${currentVoteGender === 'male' ? 'dei ragazzi' : 'delle ragazze'}</p>
+                        <p style="color: #666; font-size: 14px; margin-top: 10px;">${error.message}</p>
+                    </div>
+                `;
             }
         }
         
@@ -1051,7 +1096,7 @@
                 </div>
                 
                 <div style="margin-top: 15px; color: #666; font-size: 14px;">
-                    Foto ${currentPhotoIndex + 1} di ${currentPhotos.length}
+                    Foto ${currentPhotoIndex + 1} di ${currentPhotos.length} (Genere: ${photo.gender})
                 </div>
             `;
         }
