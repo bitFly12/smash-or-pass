@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smash or Pass - Vota le Foto</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .tab.active {
+            background: #6e8efb;
+            color: white;
+        }
+        
+        .tab:hover:not(.active) {
+            background: #f0f0f0;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .upload-area {
+            border: 2px dashed #6e8efb;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            background-color: #f8f9ff;
+        }
+        
+        .upload-area i {
+            font-size: 48px;
+            color: #6e8efb;
+            margin-bottom: 15px;
+        }
+        
+        .upload-btn {
+            background: #6e8efb;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s ease;
+            margin-top: 15px;
+        }
+        
+        .upload-btn:hover {
+            background: #5a7dfa;
+        }
+        
+        .upload-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .preview-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .preview-image {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .photo-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .photo-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .photo-img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+        
+        .photo-info {
+            padding: 15px;
+        }
+        
+        .vote-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        
+        .smash-btn, .pass-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .smash-btn {
+            background: #4CAF50;
+            color: white;
+            margin-right: 5px;
+        }
+        
+        .smash-btn:hover {
+            background: #45a049;
+        }
+        
+        .pass-btn {
+            background: #f44336;
+            color: white;
+            margin-left: 5px;
+        }
+        
+        .pass-btn:hover {
+            background: #da190b;
+        }
+        
+        .progress-container {
+            margin-top: 10px;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        
+        .smash-stat {
+            color: #4CAF50;
+        }
+        
+        .pass-stat {
+            color: #f44336;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+            color: #6e8efb;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+        
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #ddd;
+        }
+        
+        @media (max-width: 768px) {
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .tab {
+                padding: 12px 20px;
+            }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.error {
+            background: #f44336;
+        }
+    </style>
+    <!-- Includi Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Smash or Pass</h1>
+            <p>Carica la tua foto anonimamente e vota le foto degli altri!</p>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="upload">Carica Foto</div>
+            <div class="tab" data-tab="gallery">Vota Foto</div>
+        </div>
+        
+        <div class="tab-content active" id="upload-tab">
+            <div class="upload-area" id="uploadArea">
+                <i>📷</i>
+                <h3>Trascina qui la tua foto o clicca per selezionare</h3>
+                <p>La foto sarà caricata in modo anonimo</p>
+                <input type="file" id="fileInput" accept="image/*">
+                <button class="upload-btn" id="uploadBtn" disabled>Carica Foto</button>
+            </div>
+            
+            <div class="preview-container">
+                <img id="previewImage" class="preview-image" alt="Anteprima">
+            </div>
+        </div>
+        
+        <div class="tab-content" id="gallery-tab">
+            <div class="gallery" id="photoGallery">
+                <div class="loading" id="loadingIndicator">
+                    Caricamento foto in corso...
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // 🔥 SOSTITUISCI QUESTI VALORI CON I TUOI DI SUPABASE!
+        // Vai in Settings > API nel tuo progetto Supabase per trovarli
+        const SUPABASE_URL = 'https://rreyuxxnyhhahwkjxfiv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyZXl1eHhueWhoYWh3a2p4Zml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwMjIyNDgsImV4cCI6MjA3ODU5ODI0OH0.F_ZnqK10o8h-IY23_g9RzkPHqQVbpAvjQmw0awlApBE';
+        
+        // Inizializza Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Elementi DOM
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const previewImage = document.getElementById('previewImage');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const photoGallery = document.getElementById('photoGallery');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const notification = document.getElementById('notification');
+        
+        // Variabili
+        let selectedFile = null;
+        
+        // Gestione delle tab
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Rimuovi classe active da tutte le tab e contenuti
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                
+                // Aggiungi classe active alla tab e al contenuto selezionati
+                tab.classList.add('active');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+                
+                // Se si passa alla galleria, carica le foto
+                if (tabId === 'gallery') {
+                    loadPhotos();
+                }
+            });
+        });
+        
+        // Gestione dell'area di upload
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '#f0f4ff';
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.backgroundColor = '';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '';
+            
+            if (e.dataTransfer.files.length) {
+                handleFileSelection(e.dataTransfer.files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFileSelection(e.target.files[0]);
+            }
+        });
+        
+        function handleFileSelection(file) {
+            // Verifica che sia un'immagine
+            if (!file.type.match('image.*')) {
+                showNotification('Seleziona solo file immagine!', true);
+                return;
+            }
+            
+            // Verifica le dimensioni (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('L\'immagine non deve superare 5MB!', true);
+                return;
+            }
+            
+            selectedFile = file;
+            uploadBtn.disabled = false;
+            
+            // Mostra anteprima
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewImage.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Upload della foto
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Caricamento...';
+            
+            try {
+                // Genera un nome univoco per il file
+                const fileExt = selectedFile.name.split('.').pop();
+                const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+                
+                // Carica l'immagine su Supabase Storage
+                const { data: storageData, error: storageError } = await supabase.storage
+                    .from('photo-uploads')
+                    .upload(fileName, selectedFile);
+                
+                if (storageError) throw storageError;
+                
+                // Ottieni l'URL pubblico del file
+                const { data: publicUrlData } = supabase.storage
+                    .from('photo-uploads')
+                    .getPublicUrl(fileName);
+                
+                // Salva i metadati della foto nel database
+                const { error: dbError } = await supabase
+                    .from('photos')
+                    .insert([
+                        { 
+                            image_url: publicUrlData.publicUrl,
+                            smash_count: 0,
+                            pass_count: 0
+                        }
+                    ]);
+                
+                if (dbError) throw dbError;
+                
+                showNotification('Foto caricata con successo!');
+                
+                // Reset del form
+                selectedFile = null;
+                previewImage.style.display = 'none';
+                fileInput.value = '';
+                uploadBtn.textContent = 'Carica Foto';
+                uploadBtn.disabled = true;
+                
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                showNotification('Errore durante il caricamento. Riprova.', true);
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Carica Foto';
+            }
+        });
+        
+        // Carica le foto dalla galleria
+        async function loadPhotos() {
+            loadingIndicator.style.display = 'block';
+            photoGallery.innerHTML = '';
+            photoGallery.appendChild(loadingIndicator);
+            
+            try {
+                const { data: photos, error } = await supabase
+                    .from('photos')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                renderPhotos(photos || []);
+            } catch (error) {
+                console.error('Errore nel caricamento delle foto:', error);
+                showNotification('Errore nel caricamento delle foto', true);
+            }
+        }
+        
+        // Renderizza le foto nella galleria
+        function renderPhotos(photos) {
+            loadingIndicator.style.display = 'none';
+            
+            if (!photos || photos.length === 0) {
+                photoGallery.innerHTML = `
+                    <div class="empty-state">
+                        <i>📷</i>
+                        <h3>Nessuna foto disponibile</h3>
+                        <p>Sii il primo a caricare una foto!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            photoGallery.innerHTML = '';
+            
+            photos.forEach(photo => {
+                const totalVotes = photo.smash_count + photo.pass_count;
+                const smashPercentage = totalVotes > 0 ? 
+                    Math.round((photo.smash_count / totalVotes) * 100) : 0;
+                const passPercentage = totalVotes > 0 ? 
+                    Math.round((photo.pass_count / totalVotes) * 100) : 0;
+                
+                const photoCard = document.createElement('div');
+                photoCard.className = 'photo-card';
+                photoCard.innerHTML = `
+                    <img src="${photo.image_url}" alt="Foto" class="photo-img" onerror="this.src='https://via.placeholder.com/300x250?text=Errore+Caricamento'">
+                    <div class="photo-info">
+                        <div class="vote-buttons">
+                            <button class="smash-btn" data-id="${photo.id}">Smash 👍</button>
+                            <button class="pass-btn" data-id="${photo.id}">Pass 👎</button>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${smashPercentage}%"></div>
+                            </div>
+                            <div class="stats">
+                                <span class="smash-stat">${smashPercentage}% (${photo.smash_count})</span>
+                                <span class="pass-stat">${passPercentage}% (${photo.pass_count})</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                photoGallery.appendChild(photoCard);
+            });
+            
+            // Aggiungi event listener ai pulsanti di voto
+            document.querySelectorAll('.smash-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    votePhoto(e.target.getAttribute('data-id'), 'smash');
+                });
+            });
+            
+            document.querySelectorAll('.pass-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    votePhoto(e.target.getAttribute('data-id'), 'pass');
+                });
+            });
+        }
+        
+        // Vota una foto
+        async function votePhoto(photoId, voteType) {
+            try {
+                // Usa localStorage per tracciare i voti (anonimo)
+                const votedPhotos = JSON.parse(localStorage.getItem('votedPhotos') || '{}');
+                
+                if (votedPhotos[photoId]) {
+                    showNotification('Hai già votato per questa foto!', true);
+                    return;
+                }
+                
+                // Prima ottieni i dati attuali della foto
+                const { data: currentPhoto, error: fetchError } = await supabase
+                    .from('photos')
+                    .select('*')
+                    .eq('id', photoId)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                // Calcola i nuovi valori
+                const newSmashCount = voteType === 'smash' ? currentPhoto.smash_count + 1 : currentPhoto.smash_count;
+                const newPassCount = voteType === 'pass' ? currentPhoto.pass_count + 1 : currentPhoto.pass_count;
+                
+                // Aggiorna il database
+                const { error: updateError } = await supabase
+                    .from('photos')
+                    .update({ 
+                        smash_count: newSmashCount,
+                        pass_count: newPassCount
+                    })
+                    .eq('id', photoId);
+                
+                if (updateError) throw updateError;
+                
+                // Salva il voto in localStorage
+                votedPhotos[photoId] = true;
+                localStorage.setItem('votedPhotos', JSON.stringify(votedPhotos));
+                
+                showNotification(`Hai votato ${voteType === 'smash' ? 'Smash 👍' : 'Pass 👎'}!`);
+                
+                // Ricarica le foto per aggiornare le statistiche
+                loadPhotos();
+                
+            } catch (error) {
+                console.error('Errore durante il voto:', error);
+                showNotification('Errore durante il voto. Riprova.', true);
+            }
+        }
+        
+        // Mostra notifiche
+        function showNotification(message, isError = false) {
+            notification.textContent = message;
+            notification.className = 'notification';
+            
+            if (isError) {
+                notification.classList.add('error');
+            }
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Carica le foto all'avvio se siamo nella tab della galleria
+        if (document.getElementById('gallery-tab').classList.contains('active')) {
+            loadPhotos();
+        }
+    </script>
+</body>
+</html>
