@@ -587,6 +587,13 @@
             background: #f9f9f9;
             margin-bottom: 10px;
             border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .achievement-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         
         .achievement-icon {
@@ -599,7 +606,33 @@
         }
         
         .achievement-locked {
-            opacity: 0.5;
+            opacity: 0.7;
+        }
+        
+        .achievement-locked .achievement-info h4,
+        .achievement-locked .achievement-info p {
+            color: #999;
+        }
+        
+        .achievement-progress {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .achievement-item small {
+            display: block;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
         }
         
         .admin-panel {
@@ -762,6 +795,10 @@
             
             .tab-content {
                 padding: 20px 15px;
+            }
+            
+            .achievements-grid {
+                grid-template-columns: 1fr;
             }
         }
         
@@ -1156,8 +1193,318 @@
         let isModerationAuthenticated = false;
         const REPORT_THRESHOLD = 3;
         
+        // =============================================
+        // SISTEMA AVANZATO DEGLI ACHIEVEMENTS
+        // =============================================
+        
+        // Variabile globale per le statistiche utente
+        let userStats = JSON.parse(localStorage.getItem('userStats') || '{}');
+        
+        // Inizializza le statistiche utente
+        function initUserStats() {
+            if (!userStats.votes) {
+                userStats = {
+                    votes: {
+                        total: 0,
+                        male: 0,
+                        female: 0,
+                        smash: 0,
+                        pass: 0,
+                        currentStreak: 0,
+                        maxStreak: 0,
+                        lastVoteDate: null
+                    },
+                    views: 0,
+                    reports: 0,
+                    uploads: 0,
+                    achievementsUnlocked: 0,
+                    sessions: 0,
+                    lastLogin: null,
+                    photos: {
+                        uploaded: [],
+                        totalSmashReceived: 0,
+                        totalPassReceived: 0
+                    }
+                };
+                localStorage.setItem('userStats', JSON.stringify(userStats));
+            }
+            
+            // Aggiorna sessione
+            userStats.sessions++;
+            userStats.lastLogin = new Date().toISOString();
+            localStorage.setItem('userStats', JSON.stringify(userStats));
+        }
+        
+        // Funzione per aggiornare le statistiche quando si vota
+        function updateVoteStats(vote, gender) {
+            userStats.votes.total++;
+            userStats.votes[vote]++;
+            userStats.votes[gender]++;
+            userStats.views++;
+            
+            // Gestione streak
+            const today = new Date().toDateString();
+            if (userStats.votes.lastVoteDate === today) {
+                // Già votato oggi, mantieni lo streak
+            } else if (userStats.votes.lastVoteDate === new Date(Date.now() - 86400000).toDateString()) {
+                // Ha votato ieri, incrementa lo streak
+                userStats.votes.currentStreak++;
+            } else {
+                // Streak rotto
+                userStats.votes.currentStreak = 1;
+            }
+            
+            userStats.votes.lastVoteDate = today;
+            userStats.votes.maxStreak = Math.max(userStats.votes.maxStreak, userStats.votes.currentStreak);
+            
+            localStorage.setItem('userStats', JSON.stringify(userStats));
+        }
+        
+        // Funzione per aggiornare le statistiche quando si carica una foto
+        function updateUploadStats() {
+            userStats.uploads++;
+            localStorage.setItem('userStats', JSON.stringify(userStats));
+        }
+        
+        // Funzione per aggiornare le statistiche quando si segnala
+        function updateReportStats() {
+            userStats.reports++;
+            localStorage.setItem('userStats', JSON.stringify(userStats));
+        }
+        
+        // FUNZIONE PRINCIPALE PER AGGIORNARE GLI ACHIEVEMENTS
+        function updateAchievements() {
+            const achievements = JSON.parse(localStorage.getItem('achievements') || '{}');
+            let updated = false;
+
+            // Achievement basati sui voti
+            const voteCount = userStats.votes.total;
+            const smashCount = userStats.votes.smash;
+            const passCount = userStats.votes.pass;
+            const maleVotes = userStats.votes.male;
+            const femaleVotes = userStats.votes.female;
+
+            // 🔴 VOTI BASE
+            if (voteCount >= 1 && !achievements.first_vote?.unlocked) {
+                achievements.first_vote = { name: 'Primo Voto', description: 'Effettua il tuo primo voto', unlocked: true, icon: '🎯' };
+                updated = true; showNotification('🎯 Achievement sbloccato: Primo Voto!');
+            }
+            if (voteCount >= 5 && !achievements.five_votes?.unlocked) {
+                achievements.five_votes = { name: 'Votante Attivo', description: 'Effettua 5 voti', unlocked: true, icon: '🏆' };
+                updated = true; showNotification('🏆 Achievement sbloccato: Votante Attivo!');
+            }
+            if (voteCount >= 10 && !achievements.ten_votes?.unlocked) {
+                achievements.ten_votes = { name: 'Esperto di Bellezza', description: 'Effettua 10 voti', unlocked: true, icon: '👑' };
+                updated = true; showNotification('👑 Achievement sbloccato: Esperto di Bellezza!');
+            }
+            if (voteCount >= 25 && !achievements.twenty_five_votes?.unlocked) {
+                achievements.twenty_five_votes = { name: 'Giudice Instancabile', description: 'Effettua 25 voti', unlocked: true, icon: '⚡' };
+                updated = true; showNotification('⚡ Achievement sbloccato: Giudice Instancabile!');
+            }
+            if (voteCount >= 50 && !achievements.fifty_votes?.unlocked) {
+                achievements.fifty_votes = { name: 'Maestro del Voto', description: 'Effettua 50 voti', unlocked: true, icon: '🎖️' };
+                updated = true; showNotification('🎖️ Achievement sbloccato: Maestro del Voto!');
+            }
+
+            // 🔴 SMASH SPECIALIST
+            if (smashCount >= 10 && !achievements.ten_smash?.unlocked) {
+                achievements.ten_smash = { name: 'Cuore Caldo', description: 'Dai 10 Smash', unlocked: true, icon: '😍' };
+                updated = true; showNotification('😍 Achievement sbloccato: Cuore Caldo!');
+            }
+            if (smashCount >= 25 && !achievements.twenty_five_smash?.unlocked) {
+                achievements.twenty_five_smash = { name: 'Romantico Incallito', description: 'Dai 25 Smash', unlocked: true, icon: '💖' };
+                updated = true; showNotification('💖 Achievement sbloccato: Romantico Incallito!');
+            }
+
+            // 🔴 PASS SPECIALIST
+            if (passCount >= 10 && !achievements.ten_pass?.unlocked) {
+                achievements.ten_pass = { name: 'Severo ma Giusto', description: 'Dai 10 Pass', unlocked: true, icon: '😐' };
+                updated = true; showNotification('😐 Achievement sbloccato: Severo ma Giusto!');
+            }
+            if (passCount >= 25 && !achievements.twenty_five_pass?.unlocked) {
+                achievements.twenty_five_pass = { name: 'Critico Esperto', description: 'Dai 25 Pass', unlocked: true, icon: '🎯' };
+                updated = true; showNotification('🎯 Achievement sbloccato: Critico Esperto!');
+            }
+
+            // 🔴 EQUILIBRIO
+            if (smashCount >= 10 && passCount >= 10 && !achievements.balanced_voter?.unlocked) {
+                achievements.balanced_voter = { name: 'Equilibrato', description: '10 Smash e 10 Pass', unlocked: true, icon: '⚖️' };
+                updated = true; showNotification('⚖️ Achievement sbloccato: Equilibrato!');
+            }
+
+            // 🔴 PREFERENZE DI GENERE
+            if (maleVotes >= 10 && !achievements.male_lover?.unlocked) {
+                achievements.male_lover = { name: 'Amante dei Ragazzi', description: 'Vota 10 foto di ragazzi', unlocked: true, icon: '👦' };
+                updated = true; showNotification('👦 Achievement sbloccato: Amante dei Ragazzi!');
+            }
+            if (femaleVotes >= 10 && !achievements.female_lover?.unlocked) {
+                achievements.female_lover = { name: 'Amante delle Ragazze', description: 'Vota 10 foto di ragazze', unlocked: true, icon: '👧' };
+                updated = true; showNotification('👧 Achievement sbloccato: Amante delle Ragazze!');
+            }
+
+            // 🔴 STREAK E FREQUENZA
+            if (userStats.votes.currentStreak >= 3 && !achievements.three_day_streak?.unlocked) {
+                achievements.three_day_streak = { name: 'Abitudinario', description: 'Vota per 3 giorni consecutivi', unlocked: true, icon: '🔥' };
+                updated = true; showNotification('🔥 Achievement sbloccato: Abitudinario!');
+            }
+            if (userStats.votes.currentStreak >= 7 && !achievements.week_streak?.unlocked) {
+                achievements.week_streak = { name: 'Fedele', description: 'Vota per 7 giorni consecutivi', unlocked: true, icon: '💫' };
+                updated = true; showNotification('💫 Achievement sbloccato: Fedele!');
+            }
+
+            // 🔴 UPLOAD ACHIEVEMENTS
+            if (userStats.uploads >= 1 && !achievements.first_upload?.unlocked) {
+                achievements.first_upload = { name: 'Modello Emergente', description: 'Carica la tua prima foto', unlocked: true, icon: '📸' };
+                updated = true; showNotification('📸 Achievement sbloccato: Modello Emergente!');
+            }
+            if (userStats.uploads >= 3 && !achievements.three_uploads?.unlocked) {
+                achievements.three_uploads = { name: 'Fotografo Amatoriale', description: 'Carica 3 foto', unlocked: true, icon: '🌟' };
+                updated = true; showNotification('🌟 Achievement sbloccato: Fotografo Amatoriale!');
+            }
+            if (userStats.uploads >= 10 && !achievements.ten_uploads?.unlocked) {
+                achievements.ten_uploads = { name: 'Content Creator', description: 'Carica 10 foto', unlocked: true, icon: '🎭' };
+                updated = true; showNotification('🎭 Achievement sbloccato: Content Creator!');
+            }
+
+            // 🔴 SPECIALI
+            if (userStats.reports >= 5 && !achievements.vigilant?.unlocked) {
+                achievements.vigilant = { name: 'Vigilante', description: 'Segnala 5 foto', unlocked: true, icon: '🛡️' };
+                updated = true; showNotification('🛡️ Achievement sbloccato: Vigilante!');
+            }
+
+            if (updated) {
+                // Conta gli achievements sbloccati
+                const unlockedCount = Object.values(achievements).filter(a => a.unlocked).length;
+                userStats.achievementsUnlocked = unlockedCount;
+                localStorage.setItem('userStats', JSON.stringify(userStats));
+                
+                // Achievement per numero di achievements sbloccati
+                if (unlockedCount >= 5 && !achievements.achievement_hunter?.unlocked) {
+                    achievements.achievement_hunter = { name: 'Cacciatore di Achievement', description: 'Sblocca 5 achievements', unlocked: true, icon: '🎖️' };
+                    showNotification('🎖️ Achievement sbloccato: Cacciatore di Achievement!');
+                }
+                if (unlockedCount >= 10 && !achievements.achievement_master?.unlocked) {
+                    achievements.achievement_master = { name: 'Maestro degli Achievement', description: 'Sblocca 10 achievements', unlocked: true, icon: '🏅' };
+                    showNotification('🏅 Achievement sbloccato: Maestro degli Achievement!');
+                }
+                
+                localStorage.setItem('achievements', JSON.stringify(achievements));
+            }
+            
+            return achievements;
+        }
+        
+        // Inizializzazione degli Achievements
+        function loadAchievements() {
+            const defaultAchievements = {
+                // Voti Base
+                first_vote: { name: 'Primo Voto', description: 'Effettua il tuo primo voto', unlocked: false, icon: '🎯' },
+                five_votes: { name: 'Votante Attivo', description: 'Effettua 5 voti', unlocked: false, icon: '🏆' },
+                ten_votes: { name: 'Esperto di Bellezza', description: 'Effettua 10 voti', unlocked: false, icon: '👑' },
+                twenty_five_votes: { name: 'Giudice Instancabile', description: 'Effettua 25 voti', unlocked: false, icon: '⚡' },
+                fifty_votes: { name: 'Maestro del Voto', description: 'Effettua 50 voti', unlocked: false, icon: '🎖️' },
+
+                // Smash Specialist
+                ten_smash: { name: 'Cuore Caldo', description: 'Dai 10 Smash', unlocked: false, icon: '😍' },
+                twenty_five_smash: { name: 'Romantico Incallito', description: 'Dai 25 Smash', unlocked: false, icon: '💖' },
+
+                // Pass Specialist
+                ten_pass: { name: 'Severo ma Giusto', description: 'Dai 10 Pass', unlocked: false, icon: '😐' },
+                twenty_five_pass: { name: 'Critico Esperto', description: 'Dai 25 Pass', unlocked: false, icon: '🎯' },
+
+                // Equilibrio
+                balanced_voter: { name: 'Equilibrato', description: '10 Smash e 10 Pass', unlocked: false, icon: '⚖️' },
+
+                // Preferenze di Genere
+                male_lover: { name: 'Amante dei Ragazzi', description: 'Vota 10 foto di ragazzi', unlocked: false, icon: '👦' },
+                female_lover: { name: 'Amante delle Ragazze', description: 'Vota 10 foto di ragazze', unlocked: false, icon: '👧' },
+
+                // Streak e Frequenza
+                three_day_streak: { name: 'Abitudinario', description: 'Vota per 3 giorni consecutivi', unlocked: false, icon: '🔥' },
+                week_streak: { name: 'Fedele', description: 'Vota per 7 giorni consecutivi', unlocked: false, icon: '💫' },
+
+                // Upload
+                first_upload: { name: 'Modello Emergente', description: 'Carica la tua prima foto', unlocked: false, icon: '📸' },
+                three_uploads: { name: 'Fotografo Amatoriale', description: 'Carica 3 foto', unlocked: false, icon: '🌟' },
+                ten_uploads: { name: 'Content Creator', description: 'Carica 10 foto', unlocked: false, icon: '🎭' },
+
+                // Speciali
+                vigilant: { name: 'Vigilante', description: 'Segnala 5 foto', unlocked: false, icon: '🛡️' },
+
+                // Achievement Hunter
+                achievement_hunter: { name: 'Cacciatore di Achievement', description: 'Sblocca 5 achievements', unlocked: false, icon: '🎖️' },
+                achievement_master: { name: 'Maestro degli Achievement', description: 'Sblocca 10 achievements', unlocked: false, icon: '🏅' }
+            };
+
+            let currentAchievements = JSON.parse(localStorage.getItem('achievements') || '{}');
+            achievements = { ...defaultAchievements, ...currentAchievements };
+            localStorage.setItem('achievements', JSON.stringify(achievements));
+            
+            return achievements;
+        }
+        
+        // Funzione per Visualizzare gli Achievements
+        function loadAchievementsDisplay() {
+            const achievementsList = document.getElementById('achievementsList');
+            
+            // Aggiorna gli achievements prima di mostrarli
+            updateAchievements();
+            
+            const achievements = JSON.parse(localStorage.getItem('achievements') || '{}');
+            const userStats = JSON.parse(localStorage.getItem('userStats') || '{}');
+            
+            if (Object.keys(achievements).length === 0) {
+                achievementsList.innerHTML = `
+                    <div class="empty-state">
+                        <p>Non hai ancora sbloccato nessun achievement.</p>
+                        <p>Vota alcune foto o carica la tua prima foto per sbloccarli!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Calcola statistiche
+            const unlockedCount = Object.values(achievements).filter(a => a.unlocked).length;
+            const totalCount = Object.keys(achievements).length;
+            const progress = Math.round((unlockedCount / totalCount) * 100);
+
+            achievementsList.innerHTML = `
+                <div class="achievement-progress">
+                    <h3>Progresso Achievements</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0;">
+                        <span>${unlockedCount}/${totalCount} Sbloccati</span>
+                        <span>${progress}%</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.3); height: 10px; border-radius: 5px; overflow: hidden;">
+                        <div style="background: #FFD700; height: 100%; width: ${progress}%; transition: width 0.5s ease;"></div>
+                    </div>
+                </div>
+                
+                <div class="achievements-grid">
+                    ${Object.entries(achievements).map(([key, achievement]) => `
+                        <div class="achievement-item ${achievement.unlocked ? '' : 'achievement-locked'}" 
+                             style="padding: 15px; border-radius: 10px; background: ${achievement.unlocked ? '#f8fff8' : '#f5f5f5'}; border: 2px solid ${achievement.unlocked ? '#4CAF50' : '#ddd'};">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div style="font-size: 2em; filter: ${achievement.unlocked ? 'none' : 'grayscale(100%)'};">${achievement.icon}</div>
+                                <div style="flex-grow: 1;">
+                                    <h4 style="margin: 0 0 5px 0; color: ${achievement.unlocked ? '#333' : '#999'};">${achievement.name}</h4>
+                                    <p style="margin: 0; font-size: 0.9em; color: ${achievement.unlocked ? '#666' : '#999'};">${achievement.description}</p>
+                                    <small style="color: ${achievement.unlocked ? '#4CAF50' : '#999'};">${achievement.unlocked ? '✅ Sbloccato' : '🔒 Bloccato'}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        // =============================================
+        // FINE SISTEMA ACHIEVEMENTS
+        // =============================================
+
         // Inizializza l'applicazione
         document.addEventListener('DOMContentLoaded', function() {
+            initUserStats();
             initEventListeners();
             loadPhotosForVoting();
             loadAchievements();
@@ -1277,103 +1624,107 @@
         async function submitReport() {
              if (!currentPhotoForReport) return;
     
-    const reason = document.getElementById('reportReason').value;
-    const details = document.getElementById('reportDetails').value;
-    
-    try {
-        console.log('Iniziando segnalazione per foto:', currentPhotoForReport);
-        
-        // PRIMA: Inserisci il report (senza verifiche complesse)
-        const reportData = {
-            photo_id: currentPhotoForReport,
-            reason: reason,
-            details: details || null,
-            reported_at: new Date().toISOString()
-        };
-        
-        console.log('Inserendo report:', reportData);
-        
-        const { data: reportResult, error: reportError } = await supabase
-            .from('reports')
-            .insert([reportData]);
-        
-        if (reportError) {
-            console.error('Errore nell\'inserimento del report:', reportError);
-            // Continua comunque, forse possiamo aggiornare il conteggio
-        }
-        
-        // SECONDO: Aggiorna il conteggio delle segnalazioni
-        try {
-            // Prima ottieni il conteggio attuale
-            const { data: currentPhoto, error: fetchError } = await supabase
-                .from('photos')
-                .select('report_count, status')
-                .eq('id', currentPhotoForReport)
-                .single();
+            const reason = document.getElementById('reportReason').value;
+            const details = document.getElementById('reportDetails').value;
             
-            if (fetchError) {
-                console.warn('Impossibile ottenere dati foto:', fetchError);
-            } else {
-                const newReportCount = (currentPhoto.report_count || 0) + 1;
+            try {
+                console.log('Iniziando segnalazione per foto:', currentPhotoForReport);
                 
-                // Aggiorna SOLO report_count, niente updated_at
-                const { error: updateError } = await supabase
-                    .from('photos')
-                    .update({ 
-                        report_count: newReportCount
-                    })
-                    .eq('id', currentPhotoForReport);
+                // PRIMA: Inserisci il report (senza verifiche complesse)
+                const reportData = {
+                    photo_id: currentPhotoForReport,
+                    reason: reason,
+                    details: details || null,
+                    reported_at: new Date().toISOString()
+                };
                 
-                if (updateError) {
-                    console.error('Errore aggiornamento conteggio:', updateError);
-                } else {
-                    console.log('Conteggio aggiornato a:', newReportCount);
-                    
-                    // Sospensione automatica
-                    if (newReportCount >= REPORT_THRESHOLD && currentPhoto.status === 'active') {
-                        await suspendPhoto(currentPhotoForReport);
-                    }
+                console.log('Inserendo report:', reportData);
+                
+                const { data: reportResult, error: reportError } = await supabase
+                    .from('reports')
+                    .insert([reportData]);
+                
+                if (reportError) {
+                    console.error('Errore nell\'inserimento del report:', reportError);
+                    // Continua comunque, forse possiamo aggiornare il conteggio
                 }
+                
+                // SECONDO: Aggiorna il conteggio delle segnalazioni
+                try {
+                    // Prima ottieni il conteggio attuale
+                    const { data: currentPhoto, error: fetchError } = await supabase
+                        .from('photos')
+                        .select('report_count, status')
+                        .eq('id', currentPhotoForReport)
+                        .single();
+                    
+                    if (fetchError) {
+                        console.warn('Impossibile ottenere dati foto:', fetchError);
+                    } else {
+                        const newReportCount = (currentPhoto.report_count || 0) + 1;
+                        
+                        // Aggiorna SOLO report_count, niente updated_at
+                        const { error: updateError } = await supabase
+                            .from('photos')
+                            .update({ 
+                                report_count: newReportCount
+                            })
+                            .eq('id', currentPhotoForReport);
+                        
+                        if (updateError) {
+                            console.error('Errore aggiornamento conteggio:', updateError);
+                        } else {
+                            console.log('Conteggio aggiornato a:', newReportCount);
+                            
+                            // Sospensione automatica
+                            if (newReportCount >= REPORT_THRESHOLD && currentPhoto.status === 'active') {
+                                await suspendPhoto(currentPhotoForReport);
+                            }
+                        }
+                    }
+                } catch (updateError) {
+                    console.error('Errore nell\'aggiornamento:', updateError);
+                    // Non blocchiamo l'intera segnalazione per questo
+                }
+                
+                // AGGIUNGI QUESTA RIGA: Aggiorna statistiche e achievements
+                updateReportStats();
+                updateAchievements();
+                
+                showNotification('Segnalazione inviata con successo!', false, 'success');
+                closeModal('reportModal');
+                
+            } catch (error) {
+                console.error('Errore durante la segnalazione:', error);
+                showNotification('Segnalazione inviata!', false, 'success');
+                closeModal('reportModal');
             }
-        } catch (updateError) {
-            console.error('Errore nell\'aggiornamento:', updateError);
-            // Non blocchiamo l'intera segnalazione per questo
-        }
-        
-        showNotification('Segnalazione inviata con successo!', false, 'success');
-        closeModal('reportModal');
-        
-    } catch (error) {
-        console.error('Errore durante la segnalazione:', error);
-        showNotification('Segnalazione inviata!', false, 'success');
-        closeModal('reportModal');
-    }
         }
 
         async function suspendPhoto(photoId) {
              try {
-        const { error } = await supabase
-            .from('photos')
-            .update({ 
-                status: 'suspended',
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', photoId);
-        
-        if (error) {
-            console.error('Errore sospensione:', error);
-            // Prova senza updated_at
-            await supabase
-                .from('photos')
-                .update({ status: 'suspended' })
-                .eq('id', photoId);
-        } else {
-            showNotification('Foto sospesa con successo!', false, 'warning');
-        }
-        
-    } catch (error) {
-        console.error('Errore durante la sospensione:', error);
-    }
+                const { error } = await supabase
+                    .from('photos')
+                    .update({ 
+                        status: 'suspended',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', photoId);
+                
+                if (error) {
+                    console.error('Errore sospensione:', error);
+                    // Prova senza updated_at
+                    await supabase
+                        .from('photos')
+                        .update({ status: 'suspended' })
+                        .eq('id', photoId);
+                } else {
+                    showNotification('Foto sospesa con successo!', false, 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Errore durante la sospensione:', error);
+            }
         }
 
         // FUNZIONE PER CAMBIARE VOTO NELLA CRONOLOGIA
@@ -1671,6 +2022,10 @@
             voteHistory[photo.id] = vote;
             localStorage.setItem('voteHistory', JSON.stringify(voteHistory));
             
+            // AGGIUNGI QUESTE RIGHE: Aggiorna statistiche e achievements
+            updateVoteStats(vote, photo.gender);
+            updateAchievements();
+            
             try {
                 const updateField = vote === 'smash' ? 'smash_count' : 'pass_count';
                 const { error } = await supabase
@@ -1848,35 +2203,6 @@
             loadLeaderboard();
         }
         
-        function loadAchievements() {
-            const defaultAchievements = {
-                first_vote: { name: 'Primo Voto', description: 'Effettua il tuo primo voto', unlocked: false, icon: '🎯' },
-                five_votes: { name: 'Votante Attivo', description: 'Effettua 5 voti', unlocked: false, icon: '🏆' },
-                ten_votes: { name: 'Esperto di Bellezza', description: 'Effettua 10 voti', unlocked: false, icon: '👑' },
-                first_upload: { name: 'Modello Emergente', description: 'Carica la tua prima foto', unlocked: false, icon: '📸' }
-            };
-            
-            achievements = { ...defaultAchievements, ...achievements };
-            localStorage.setItem('achievements', JSON.stringify(achievements));
-        }
-        
-        function loadAchievementsDisplay() {
-            const achievementsList = document.getElementById('achievementsList');
-            
-            achievementsList.innerHTML = Object.entries(achievements).map(([key, achievement]) => `
-                <div class="achievement-item ${achievement.unlocked ? '' : 'achievement-locked'}">
-                    <div class="achievement-icon">${achievement.icon}</div>
-                    <div class="achievement-info">
-                        <h4>${achievement.name}</h4>
-                        <p>${achievement.description}</p>
-                    </div>
-                    <div class="history-vote ${achievement.unlocked ? 'smash' : 'pass'}">
-                        ${achievement.unlocked ? 'Sbloccato' : 'Bloccato'}
-                    </div>
-                </div>
-            `).join('');
-        }
-        
         async function loadStats() {
             try {
                 const { data: photos, error: photosError } = await supabase
@@ -1940,6 +2266,10 @@
                     }]);
                 
                 if (dbError) throw dbError;
+                
+                // AGGIUNGI QUESTA RIGA: Aggiorna statistiche e achievements
+                updateUploadStats();
+                updateAchievements();
                 
                 showNotification('Foto caricata con successo!');
                 
@@ -2208,6 +2538,7 @@
             const data = {
                 voteHistory: voteHistory,
                 achievements: achievements,
+                userStats: userStats,
                 exportDate: new Date().toISOString()
             };
             
@@ -2238,6 +2569,11 @@
                         localStorage.setItem('achievements', JSON.stringify(achievements));
                     }
                     
+                    if (data.userStats) {
+                        userStats = { ...userStats, ...data.userStats };
+                        localStorage.setItem('userStats', JSON.stringify(userStats));
+                    }
+                    
                     showNotification('Dati importati con successo!');
                     
                     if (document.getElementById('history-tab').classList.contains('active')) {
@@ -2257,5 +2593,3 @@
     </script>
 </body>
 </html>
-
-
