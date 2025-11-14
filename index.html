@@ -757,35 +757,15 @@
             margin-left: 10px;
         }
         
-        /* Stili per la protezione admin */
-        .admin-protection {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 30px;
-            text-align: center;
-            margin: 20px 0;
-        }
-        
-        .admin-login-form {
-            max-width: 400px;
-            margin: 0 auto;
-        }
-        
-        .password-input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
+        .report-btn {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 5px 10px;
             border-radius: 5px;
-            font-size: 16px;
-        }
-        
-        .admin-only {
-            display: none;
-        }
-        
-        .admin-only.authenticated {
-            display: block;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 12px;
         }
         
         @media (max-width: 768px) {
@@ -954,12 +934,7 @@
             <li><a href="#" onclick="switchTab('history')" class="nav-link" data-tab="history">📊 Cronologia</a></li>
             <li><a href="#" onclick="switchTab('leaderboard')" class="nav-link" data-tab="leaderboard">🏆 Classifica</a></li>
             <li><a href="#" onclick="switchTab('achievements')" class="nav-link" data-tab="achievements">🎯 Achievement</a></li>
-            
-            <!-- Solo se admin autenticato -->
-            <li class="admin-only" id="adminNavItem">
-                <a href="#" onclick="switchTab('admin')" class="nav-link" data-tab="admin">🛡️ Moderazione</a>
-            </li>
-            
+            <li><a href="#" onclick="switchTab('moderation')" class="nav-link" data-tab="moderation">🛡️ Moderazione</a></li>
             <li><a href="#" onclick="switchTab('settings')" class="nav-link" data-tab="settings">⚙️ Impostazioni</a></li>
         </ul>
     </div>
@@ -1145,20 +1120,9 @@
             </div>
         </div>
         
-        <!-- Tab per moderazione admin (PROTETTA) -->
-        <div class="tab-content admin-only" id="admin-tab">
-            <div class="admin-protection" id="adminLoginSection">
-                <h2>🔐 Accesso Amministratore</h2>
-                <p>Questa sezione è riservata all'amministratore.</p>
-                <div class="admin-login-form">
-                    <input type="password" id="adminPassword" class="password-input" placeholder="Inserisci la password admin">
-                    <button class="btn btn-primary" onclick="authenticateAdmin()" style="width: 100%;">
-                        🔑 Accedi
-                    </button>
-                </div>
-            </div>
-            
-            <div class="admin-panel" id="adminPanel" style="display: none;">
+        <!-- Tab per moderazione semplificata -->
+        <div class="tab-content" id="moderation-tab">
+            <div class="admin-panel">
                 <h2>🛡️ Pannello di Moderazione</h2>
                 <p>Qui puoi gestire le foto segnalate dagli utenti.</p>
                 
@@ -1182,12 +1146,6 @@
                     <div id="moderationStats">
                         <div class="loading">Caricamento statistiche...</div>
                     </div>
-                </div>
-                
-                <div class="action-buttons">
-                    <button class="btn btn-secondary" onclick="logoutAdmin()">
-                        🚪 Esci
-                    </button>
                 </div>
             </div>
         </div>
@@ -1283,29 +1241,6 @@
         let achievements = JSON.parse(localStorage.getItem('achievements') || '{}');
         let currentPhotoForReport = null;
         
-        // 🔐 SISTEMA DI SICUREZZA ADMIN - La password viene generata dinamicamente
-        // In un'applicazione reale, questa logica dovrebbe essere sul server
-        let isAdminAuthenticated = localStorage.getItem('adminAuthenticated') === 'true';
-        const ADMIN_SALT = 'smash-or-pass-cesaris-2024'; // Cambia questo salt!
-        
-        // Funzione per generare hash semplice (solo per dimostrazione)
-        function simpleHash(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                const char = str.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash; // Convert to 32bit integer
-            }
-            return hash.toString();
-        }
-        
-        // La password è calcolata dinamicamente, non hardcoded
-        function getAdminPassword() {
-            // In un'applicazione reale, questa logica dovrebbe essere sul server
-            const baseString = ADMIN_SALT + new Date().toISOString().split('T')[0];
-            return simpleHash(baseString).substring(0, 8);
-        }
-        
         // Soglia per sospensione automatica
         const REPORT_THRESHOLD = 3;
         
@@ -1315,7 +1250,6 @@
             loadPhotosForVoting();
             loadAchievements();
             loadStats();
-            checkAdminAuth();
         });
         
         // Gestione Menu Laterale
@@ -1357,18 +1291,10 @@
                 loadLeaderboard();
             } else if (tabName === 'achievements') {
                 loadAchievementsDisplay();
-            } else if (tabName === 'admin') {
-                // Se non autenticato, mostra il login
-                if (!isAdminAuthenticated) {
-                    document.getElementById('adminLoginSection').style.display = 'block';
-                    document.getElementById('adminPanel').style.display = 'none';
-                } else {
-                    document.getElementById('adminLoginSection').style.display = 'none';
-                    document.getElementById('adminPanel').style.display = 'block';
-                    loadReportedPhotos();
-                    loadSuspendedPhotos();
-                    loadModerationStats();
-                }
+            } else if (tabName === 'moderation') {
+                loadReportedPhotos();
+                loadSuspendedPhotos();
+                loadModerationStats();
             } else if (tabName === 'settings') {
                 loadStats();
             }
@@ -1459,411 +1385,6 @@
             });
         }
         
-        // 🔐 SISTEMA DI AUTENTICAZIONE ADMIN
-        function checkAdminAuth() {
-            const adminElements = document.querySelectorAll('.admin-only');
-            const adminNavItem = document.getElementById('adminNavItem');
-            
-            if (isAdminAuthenticated) {
-                // Mostra elementi admin
-                adminElements.forEach(el => el.classList.add('authenticated'));
-            } else {
-                // Nascondi elementi admin
-                adminElements.forEach(el => el.classList.remove('authenticated'));
-            }
-        }
-        
-        function authenticateAdmin() {
-            const passwordInput = document.getElementById('adminPassword');
-            const enteredPassword = passwordInput.value;
-            
-            // Genera la password del giorno
-            const todayPassword = getAdminPassword();
-            
-            if (enteredPassword === todayPassword) {
-                isAdminAuthenticated = true;
-                localStorage.setItem('adminAuthenticated', 'true');
-                showNotification('Accesso admin effettuato!', false, 'info');
-                checkAdminAuth();
-                
-                // Se siamo nella tab admin, ricarica i dati
-                if (document.getElementById('admin-tab').classList.contains('active')) {
-                    document.getElementById('adminLoginSection').style.display = 'none';
-                    document.getElementById('adminPanel').style.display = 'block';
-                    loadReportedPhotos();
-                    loadSuspendedPhotos();
-                    loadModerationStats();
-                }
-                
-                // Resetta il campo password
-                passwordInput.value = '';
-            } else {
-                showNotification('Password errata!', true);
-                passwordInput.value = '';
-                passwordInput.focus();
-            }
-        }
-        
-        function logoutAdmin() {
-            isAdminAuthenticated = false;
-            localStorage.removeItem('adminAuthenticated');
-            showNotification('Disconnessione admin effettuata.', false, 'info');
-            checkAdminAuth();
-            
-            // Se siamo nella tab admin, torna alla home
-            if (document.getElementById('admin-tab').classList.contains('active')) {
-                switchTab('upload');
-            }
-        }
-        
-        // 📊 STATISTICHE MODERAZIONE
-        async function loadModerationStats() {
-            const moderationStats = document.getElementById('moderationStats');
-            
-            try {
-                // Conta foto attive
-                const { data: activePhotos, error: activeError } = await supabase
-                    .from('photos')
-                    .select('id', { count: 'exact' })
-                    .eq('status', 'active');
-                
-                // Conta foto sospese
-                const { data: suspendedPhotos, error: suspendedError } = await supabase
-                    .from('photos')
-                    .select('id', { count: 'exact' })
-                    .eq('status', 'suspended');
-                
-                // Conta report totali
-                const { data: totalReports, error: reportsError } = await supabase
-                    .from('reports')
-                    .select('id', { count: 'exact' });
-                
-                if (activeError || suspendedError || reportsError) {
-                    throw new Error('Errore nel caricamento delle statistiche');
-                }
-                
-                moderationStats.innerHTML = `
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center;">
-                        <div style="background: #d4edda; padding: 15px; border-radius: 8px;">
-                            <div style="font-size: 24px; font-weight: bold; color: #155724;">${activePhotos.length || 0}</div>
-                            <div style="color: #155724;">Foto Attive</div>
-                        </div>
-                        <div style="background: #fff3cd; padding: 15px; border-radius: 8px;">
-                            <div style="font-size: 24px; font-weight: bold; color: #856404;">${suspendedPhotos.length || 0}</div>
-                            <div style="color: #856404;">Foto Sospese</div>
-                        </div>
-                        <div style="background: #f8d7da; padding: 15px; border-radius: 8px;">
-                            <div style="font-size: 24px; font-weight: bold; color: #721c24;">${totalReports.length || 0}</div>
-                            <div style="color: #721c24;">Report Totali</div>
-                        </div>
-                    </div>
-                `;
-                
-            } catch (error) {
-                console.error('Errore nel caricamento delle statistiche:', error);
-                moderationStats.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle statistiche</p></div>';
-            }
-        }
-        
-        // 🛡️ SISTEMA DI REPORT E MODERAZIONE
-        
-        // Carica le foto segnalate
-        async function loadReportedPhotos() {
-            if (!isAdminAuthenticated) return;
-            
-            const reportedPhotosList = document.getElementById('reportedPhotosList');
-            reportedPhotosList.innerHTML = '<div class="loading">Caricamento foto segnalate...</div>';
-            
-            try {
-                // Ottieni le foto con report_count > 0 e status active
-                const { data: photos, error } = await supabase
-                    .from('photos')
-                    .select('*')
-                    .gt('report_count', 0)
-                    .eq('status', 'active')
-                    .order('report_count', { ascending: false });
-                
-                if (error) throw error;
-                
-                if (!photos || photos.length === 0) {
-                    reportedPhotosList.innerHTML = '<div class="empty-state"><p>Nessuna foto segnalata</p></div>';
-                    return;
-                }
-                
-                reportedPhotosList.innerHTML = photos.map(photo => {
-                    const totalVotes = photo.smash_count + photo.pass_count;
-                    const smashPercentage = totalVotes > 0 ? 
-                        Math.round((photo.smash_count / totalVotes) * 100) : 0;
-                    
-                    return `
-                        <div class="reported-photo">
-                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                                <img src="${photo.image_url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 10px; margin-right: 15px;">
-                                <div style="flex-grow: 1;">
-                                    <h4>${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'}</h4>
-                                    <p><strong>Segnalazioni:</strong> ${photo.report_count || 0}</p>
-                                    <p><strong>Smash:</strong> ${photo.smash_count} | <strong>Pass:</strong> ${photo.pass_count}</p>
-                                    <p><strong>Caricata il:</strong> ${new Date(photo.created_at).toLocaleDateString()}</p>
-                                </div>
-                            </div>
-                            
-                            <div class="admin-actions">
-                                <button class="admin-btn approve-btn" onclick="approvePhoto('${photo.id}')">✅ Approva</button>
-                                <button class="admin-btn reject-btn" onclick="rejectPhoto('${photo.id}')">❌ Rimuovi</button>
-                                <button class="btn btn-secondary" onclick="suspendPhoto('${photo.id}')">⏸️ Sospendi</button>
-                                <button class="btn btn-secondary" onclick="showPhotoReports('${photo.id}')">📋 Report</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-            } catch (error) {
-                console.error('Errore nel caricamento delle foto segnalate:', error);
-                reportedPhotosList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle foto segnalate</p></div>';
-            }
-        }
-        
-        // Carica le foto sospese
-        async function loadSuspendedPhotos() {
-            if (!isAdminAuthenticated) return;
-            
-            const suspendedPhotosList = document.getElementById('suspendedPhotosList');
-            suspendedPhotosList.innerHTML = '<div class="loading">Caricamento foto sospese...</div>';
-            
-            try {
-                // Ottieni le foto con status = 'suspended'
-                const { data: photos, error } = await supabase
-                    .from('photos')
-                    .select('*')
-                    .eq('status', 'suspended')
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                
-                if (!photos || photos.length === 0) {
-                    suspendedPhotosList.innerHTML = '<div class="empty-state"><p>Nessuna foto sospesa</p></div>';
-                    return;
-                }
-                
-                suspendedPhotosList.innerHTML = photos.map(photo => {
-                    const totalVotes = photo.smash_count + photo.pass_count;
-                    const smashPercentage = totalVotes > 0 ? 
-                        Math.round((photo.smash_count / totalVotes) * 100) : 0;
-                    
-                    return `
-                        <div class="reported-photo">
-                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                                <img src="${photo.image_url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 10px; margin-right: 15px;">
-                                <div>
-                                    <h4>${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'} <span class="suspended-badge">SOSPESA</span></h4>
-                                    <p><strong>Segnalazioni:</strong> ${photo.report_count || 0}</p>
-                                    <p><strong>Smash:</strong> ${photo.smash_count} | <strong>Pass:</strong> ${photo.pass_count}</p>
-                                    <p><strong>Caricata il:</strong> ${new Date(photo.created_at).toLocaleDateString()}</p>
-                                </div>
-                            </div>
-                            <div class="admin-actions">
-                                <button class="admin-btn approve-btn" onclick="approvePhoto('${photo.id}')">✅ Riattiva</button>
-                                <button class="admin-btn reject-btn" onclick="rejectPhoto('${photo.id}')">❌ Elimina</button>
-                                <button class="btn btn-secondary" onclick="showPhotoReports('${photo.id}')">📋 Report</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-            } catch (error) {
-                console.error('Errore nel caricamento delle foto sospese:', error);
-                suspendedPhotosList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle foto sospese</p></div>';
-            }
-        }
-        
-        // Approva una foto (rimuove le segnalazioni)
-        async function approvePhoto(photoId) {
-            if (!isAdminAuthenticated) {
-                showNotification('Accesso admin richiesto!', true);
-                return;
-            }
-            
-            try {
-                const { error } = await supabase
-                    .from('photos')
-                    .update({ 
-                        report_count: 0,
-                        status: 'active'
-                    })
-                    .eq('id', photoId);
-                
-                if (error) throw error;
-                
-                // Segna i report come risolti
-                await supabase
-                    .from('reports')
-                    .update({ resolved: true })
-                    .eq('photo_id', photoId);
-                
-                showNotification('Foto approvata con successo!');
-                
-                // Ricarica le liste
-                loadReportedPhotos();
-                loadSuspendedPhotos();
-                loadModerationStats();
-                
-            } catch (error) {
-                console.error('Errore durante l\'approvazione:', error);
-                showNotification('Errore durante l\'approvazione. Riprova.', true);
-            }
-        }
-        
-        // Sospendi una foto manualmente
-        async function suspendPhoto(photoId) {
-            if (!isAdminAuthenticated) {
-                showNotification('Accesso admin richiesto!', true);
-                return;
-            }
-            
-            try {
-                const { error } = await supabase
-                    .from('photos')
-                    .update({ 
-                        status: 'suspended'
-                    })
-                    .eq('id', photoId);
-                
-                if (error) throw error;
-                
-                showNotification('Foto sospesa con successo!');
-                
-                // Ricarica le liste
-                loadReportedPhotos();
-                loadSuspendedPhotos();
-                loadModerationStats();
-                
-            } catch (error) {
-                console.error('Errore durante la sospensione:', error);
-                showNotification('Errore durante la sospensione. Riprova.', true);
-            }
-        }
-        
-        // Mostra tutti i report di una foto
-        async function showPhotoReports(photoId) {
-            if (!isAdminAuthenticated) {
-                showNotification('Accesso admin richiesto!', true);
-                return;
-            }
-            
-            try {
-                const { data: reports, error } = await supabase
-                    .from('reports')
-                    .select('*')
-                    .eq('photo_id', photoId)
-                    .order('reported_at', { ascending: false });
-                
-                if (error) throw error;
-                
-                const reportsHtml = reports.map(report => `
-                    <div style="border-left: 3px solid #ff9800; padding: 10px; margin: 10px 0; background: #f8f9fa; border-radius: 5px;">
-                        <strong>${getReasonText(report.reason)}</strong>
-                        ${report.details ? `<p style="margin: 5px 0;">${report.details}</p>` : ''}
-                        <small style="color: #666;">Segnalato il: ${new Date(report.reported_at).toLocaleString()}</small>
-                        ${report.resolved ? '<br><span style="color: green;">✓ Risolto</span>' : ''}
-                    </div>
-                `).join('');
-                
-                // Crea un modal per mostrare i report
-                const modal = document.createElement('div');
-                modal.className = 'modal';
-                modal.style.display = 'flex';
-                modal.innerHTML = `
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3>Tutti i Report</h3>
-                            <button class="close-modal" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
-                        </div>
-                        <div style="max-height: 400px; overflow-y: auto;">
-                            ${reports.length > 0 ? reportsHtml : '<p>Nessun report trovato.</p>'}
-                        </div>
-                        <div style="margin-top: 15px; text-align: center;">
-                            <button class="btn btn-primary" onclick="this.parentElement.parentElement.parentElement.remove()">Chiudi</button>
-                        </div>
-                    </div>
-                `;
-                
-                document.body.appendChild(modal);
-                
-            } catch (error) {
-                console.error('Errore nel caricamento dei report:', error);
-                showNotification('Errore nel caricamento dei report.', true);
-            }
-        }
-        
-        // Funzione helper per testo dei report
-        function getReasonText(reason) {
-            const reasons = {
-                'inappropriate': 'Contenuto inappropriato',
-                'sexual': 'Contenuto sessuale',
-                'fake': 'Foto non reale/falsa',
-                'other': 'Altro'
-            };
-            return reasons[reason] || reason;
-        }
-        
-        // Rifiuta/rimuovi una foto
-        async function rejectPhoto(photoId) {
-            if (!isAdminAuthenticated) {
-                showNotification('Accesso admin richiesto!', true);
-                return;
-            }
-            
-            if (!confirm('Sei sicuro di voler rimuovere questa foto? Questa azione non può essere annullata.')) {
-                return;
-            }
-            
-            try {
-                // Prima ottieni l'URL dell'immagine per eliminarla dallo storage
-                const { data: photo, error: fetchError } = await supabase
-                    .from('photos')
-                    .select('image_url')
-                    .eq('id', photoId)
-                    .single();
-                
-                if (fetchError) throw fetchError;
-                
-                // Estrai il nome del file dall'URL
-                const imagePath = photo.image_url.split('/').pop();
-                
-                // Elimina l'immagine dallo storage
-                const { error: storageError } = await supabase.storage
-                    .from('photo-uploads')
-                    .remove([imagePath]);
-                
-                if (storageError) {
-                    console.error('Errore nell\'eliminazione dell\'immagine:', storageError);
-                    // Continua comunque con l'eliminazione del record
-                }
-                
-                // Elimina il record della foto
-                const { error } = await supabase
-                    .from('photos')
-                    .delete()
-                    .eq('id', photoId);
-                
-                if (error) throw error;
-                
-                showNotification('Foto rimossa con successo!');
-                
-                // Ricarica le liste
-                loadReportedPhotos();
-                loadSuspendedPhotos();
-                loadModerationStats();
-                
-            } catch (error) {
-                console.error('Errore durante la rimozione:', error);
-                showNotification('Errore durante la rimozione. Riprova.', true);
-            }
-        }
-        
-        // ... (le altre funzioni rimangono simili al codice precedente)
-        // Per brevità, includo solo le funzioni modificate o essenziali
-        
         // Gestione passaggi
         function goToStep(step) {
             // Nascondi tutti i contenuti dei passaggi
@@ -1934,17 +1455,785 @@
             loadPhotosForVoting();
         }
         
-        // ... (altre funzioni come handleFileSelection, uploadPhoto, loadPhotosForVoting, etc.)
-        // Per brevità, assumo che siano simili al codice precedente
+        // Gestione selezione file
+        function handleFileSelection(file) {
+            if (!file || !file.type.match('image.*')) {
+                showNotification('Seleziona solo file immagine!', true);
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('L\'immagine è troppo grande! Massimo 5MB.', true);
+                return;
+            }
+            
+            selectedFile = file;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewImage = document.getElementById('previewImage');
+                previewImage.src = e.target.result;
+                previewImage.style.display = 'block';
+                
+                // Abilita pulsante Avanti
+                document.getElementById('nextToStep3').disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Carica foto per la votazione
+        async function loadPhotosForVoting() {
+            const singlePhotoView = document.getElementById('singlePhotoView');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            // Mostra il caricamento
+            loadingIndicator.style.display = 'block';
+            singlePhotoView.innerHTML = '<div class="loading" id="loadingIndicator">Caricamento foto in corso...</div>';
+
+            try {
+                // Recupera le foto dal database Supabase
+                const { data: photos, error } = await supabase
+                    .from('photos')
+                    .select('*')
+                    .eq('gender', currentVoteGender)
+                    .eq('status', 'active')
+                    .limit(10);
+
+                if (error) throw error;
+
+                if (!photos || photos.length === 0) {
+                    singlePhotoView.innerHTML = `
+                        <div class="empty-state">
+                            <p>Nessuna foto disponibile per la votazione.</p>
+                            <p>Perché non carichi tu la prima foto?</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                currentPhotos = photos;
+                currentPhotoIndex = 0;
+                showCurrentPhoto();
+
+            } catch (error) {
+                console.error('Errore nel caricamento delle foto:', error);
+                singlePhotoView.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle foto. Riprova più tardi.</p></div>';
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+        
+        // Mostra la foto corrente per la votazione
+        function showCurrentPhoto() {
+            const singlePhotoView = document.getElementById('singlePhotoView');
+            
+            if (currentPhotoIndex >= currentPhotos.length) {
+                // Nessuna altra foto disponibile
+                singlePhotoView.innerHTML = `
+                    <div class="empty-state">
+                        <p>Hai visto tutte le foto disponibili!</p>
+                        <p>Torna più tardi per nuove foto o cambia genere.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const photo = currentPhotos[currentPhotoIndex];
+            
+            // Controlla se l'utente ha già votato questa foto
+            const userVote = voteHistory[photo.id];
+            
+            singlePhotoView.innerHTML = `
+                <div class="photo-container">
+                    <img src="${photo.image_url}" class="current-photo" alt="Foto da votare">
+                </div>
+                
+                <div class="progress-container-single">
+                    <div class="progress-bar-single">
+                        <div class="progress-fill smash" style="width: ${photo.smash_count + photo.pass_count > 0 ? (photo.smash_count / (photo.smash_count + photo.pass_count)) * 100 : 0}%"></div>
+                    </div>
+                    <div class="stats-single">
+                        <span class="smash-stat">${photo.smash_count} SMASH</span>
+                        <span class="pass-stat">${photo.pass_count} PASS</span>
+                    </div>
+                </div>
+                
+                ${userVote ? `
+                    <div style="text-align: center; margin: 20px 0;">
+                        <p><strong>Hai già votato: ${userVote === 'smash' ? '😍 SMASH' : '😐 PASS'}</strong></p>
+                        <button class="btn btn-secondary" onclick="currentPhotoIndex++; showCurrentPhoto();">
+                            Vota Prossima Foto
+                        </button>
+                        <button class="report-btn" onclick="openReportModal('${photo.id}')">
+                            ⚠️ Segnala
+                        </button>
+                    </div>
+                ` : `
+                    <div class="vote-buttons-single">
+                        <button class="pass-btn-single" onclick="voteCurrentPhoto('pass')">
+                            😐 PASS
+                        </button>
+                        <button class="smash-btn-single" onclick="voteCurrentPhoto('smash')">
+                            😍 SMASH
+                        </button>
+                    </div>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <button class="report-btn" onclick="openReportModal('${photo.id}')">
+                            ⚠️ Segnala questa foto
+                        </button>
+                    </div>
+                `}
+            `;
+            
+            // Aggiorna statistiche in tempo reale
+            updateLiveStats();
+        }
+        
+        // Vota la foto corrente
+        async function voteCurrentPhoto(vote) {
+            if (currentPhotoIndex >= currentPhotos.length) return;
+            
+            const photo = currentPhotos[currentPhotoIndex];
+            
+            // Applica effetto visivo
+            const photoContainer = document.querySelector('.photo-container');
+            if (vote === 'smash') {
+                photoContainer.classList.add('smash-effect');
+            } else {
+                photoContainer.classList.add('pass-effect');
+            }
+            
+            // Salva il voto nella cronologia locale
+            voteHistory[photo.id] = vote;
+            localStorage.setItem('voteHistory', JSON.stringify(voteHistory));
+            
+            try {
+                // Aggiorna il conteggio nel database
+                const updateField = vote === 'smash' ? 'smash_count' : 'pass_count';
+                const { error } = await supabase
+                    .from('photos')
+                    .update({ 
+                        [updateField]: photo[updateField] + 1 
+                    })
+                    .eq('id', photo.id);
+                
+                if (error) throw error;
+                
+                // Aggiorna le statistiche
+                updateLiveStats();
+                
+                // Mostra notifica
+                showNotification(`Hai votato: ${vote === 'smash' ? '😍 SMASH' : '😐 PASS'}`, false, 'info');
+                
+                // Passa alla prossima foto dopo un breve delay
+                setTimeout(() => {
+                    currentPhotoIndex++;
+                    showCurrentPhoto();
+                }, 800);
+                
+            } catch (error) {
+                console.error('Errore durante il voto:', error);
+                showNotification('Errore durante il voto. Riprova.', true);
+            }
+        }
+        
+        // Aggiorna statistiche in tempo reale
+        function updateLiveStats() {
+            let totalSmash = 0;
+            let totalPass = 0;
+            
+            currentPhotos.forEach(photo => {
+                totalSmash += photo.smash_count;
+                totalPass += photo.pass_count;
+            });
+            
+            const liveStats = document.getElementById('liveStats');
+            liveStats.style.display = 'flex';
+            
+            document.getElementById('liveSmash').textContent = totalSmash;
+            document.getElementById('livePass').textContent = totalPass;
+            document.getElementById('liveTotal').textContent = totalSmash + totalPass;
+        }
+        
+        // Carica la cronologia voti
+        function loadVoteHistory() {
+            const historyList = document.getElementById('historyList');
+            const historyEntries = Object.entries(voteHistory);
+            
+            if (historyEntries.length === 0) {
+                historyList.innerHTML = '<div class="empty-state"><p>Non hai ancora votato nessuna foto.</p></div>';
+                return;
+            }
+            
+            // Filtra in base al filtro corrente
+            const filteredEntries = historyEntries.filter(([_, vote]) => {
+                if (currentHistoryFilter === 'all') return true;
+                return vote === currentHistoryFilter;
+            });
+            
+            if (filteredEntries.length === 0) {
+                historyList.innerHTML = '<div class="empty-state"><p>Nessun voto corrisponde al filtro selezionato.</p></div>';
+                return;
+            }
+            
+            // Per ora mostra solo gli ID, in un'app reale dovresti caricare i dettagli delle foto
+            historyList.innerHTML = filteredEntries.map(([photoId, vote]) => `
+                <div class="history-item">
+                    <div class="history-info">
+                        <p><strong>Foto ID:</strong> ${photoId.substring(0, 8)}...</p>
+                        <p><strong>Voto:</strong> ${vote === 'smash' ? '😍 SMASH' : '😐 PASS'}</p>
+                    </div>
+                    <div class="history-vote ${vote}">
+                        ${vote === 'smash' ? 'SMASH' : 'PASS'}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Filtra la cronologia
+        function filterHistory(filter) {
+            currentHistoryFilter = filter;
+            
+            // Aggiorna pulsanti filtro
+            document.querySelectorAll('.history-filter .filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadVoteHistory();
+        }
+        
+        // Carica la classifica
+        async function loadLeaderboard() {
+            const leaderboardList = document.getElementById('leaderboardList');
+            leaderboardList.innerHTML = '<div class="loading">Caricamento classifica...</div>';
+            
+            try {
+                let query = supabase
+                    .from('photos')
+                    .select('*')
+                    .eq('status', 'active')
+                    .order('smash_count', { ascending: false })
+                    .limit(20);
+                
+                if (currentLeaderboardFilter !== 'all') {
+                    query = query.eq('gender', currentLeaderboardFilter);
+                }
+                
+                const { data: photos, error } = await query;
+                
+                if (error) throw error;
+                
+                if (!photos || photos.length === 0) {
+                    leaderboardList.innerHTML = '<div class="empty-state"><p>Nessuna foto in classifica.</p></div>';
+                    return;
+                }
+                
+                leaderboardList.innerHTML = photos.map((photo, index) => {
+                    const totalVotes = photo.smash_count + photo.pass_count;
+                    const smashPercentage = totalVotes > 0 ? 
+                        Math.round((photo.smash_count / totalVotes) * 100) : 0;
+                    
+                    return `
+                        <div class="leaderboard-item">
+                            <div class="leaderboard-rank">${index + 1}</div>
+                            <img src="${photo.image_url}" class="leaderboard-photo" alt="Foto">
+                            <div class="leaderboard-info">
+                                <h4>${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'}</h4>
+                                <p><strong>Smash Rate:</strong> ${smashPercentage}%</p>
+                                <p><strong>Voti Totali:</strong> ${totalVotes}</p>
+                            </div>
+                            <div class="leaderboard-score">
+                                ${photo.smash_count} 😍
+                            </div>
+                            <button class="report-btn" onclick="openReportModal('${photo.id}')">
+                                ⚠️
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Errore nel caricamento della classifica:', error);
+                leaderboardList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento della classifica.</p></div>';
+            }
+        }
+        
+        // Filtra la classifica
+        function filterLeaderboard(filter) {
+            currentLeaderboardFilter = filter;
+            
+            // Aggiorna pulsanti filtro
+            document.querySelectorAll('.leaderboard-filter .filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadLeaderboard();
+        }
+        
+        // Carica achievement
+        function loadAchievements() {
+            // Achievement di base
+            const defaultAchievements = {
+                first_vote: { name: 'Primo Voto', description: 'Effettua il tuo primo voto', unlocked: false, icon: '🎯' },
+                five_votes: { name: 'Votante Attivo', description: 'Effettua 5 voti', unlocked: false, icon: '🏆' },
+                ten_votes: { name: 'Esperto di Bellezza', description: 'Effettua 10 voti', unlocked: false, icon: '👑' },
+                first_upload: { name: 'Modello Emergente', description: 'Carica la tua prima foto', unlocked: false, icon: '📸' }
+            };
+            
+            // Unisci con achievement esistenti
+            achievements = { ...defaultAchievements, ...achievements };
+            localStorage.setItem('achievements', JSON.stringify(achievements));
+        }
+        
+        // Mostra achievement
+        function loadAchievementsDisplay() {
+            const achievementsList = document.getElementById('achievementsList');
+            
+            achievementsList.innerHTML = Object.entries(achievements).map(([key, achievement]) => `
+                <div class="achievement-item ${achievement.unlocked ? '' : 'achievement-locked'}">
+                    <div class="achievement-icon">${achievement.icon}</div>
+                    <div class="achievement-info">
+                        <h4>${achievement.name}</h4>
+                        <p>${achievement.description}</p>
+                    </div>
+                    <div class="history-vote ${achievement.unlocked ? 'smash' : 'pass'}">
+                        ${achievement.unlocked ? 'Sbloccato' : 'Bloccato'}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Carica statistiche
+        async function loadStats() {
+            try {
+                // Conta foto totali
+                const { data: photos, error: photosError } = await supabase
+                    .from('photos')
+                    .select('id', { count: 'exact' });
+                
+                // Conta voti totali
+                const { data: allPhotos, error: votesError } = await supabase
+                    .from('photos')
+                    .select('smash_count, pass_count');
+                
+                if (photosError || votesError) throw new Error('Errore nel caricamento delle statistiche');
+                
+                let totalVotes = 0;
+                if (allPhotos) {
+                    allPhotos.forEach(photo => {
+                        totalVotes += photo.smash_count + photo.pass_count;
+                    });
+                }
+                
+                document.getElementById('totalPhotos').textContent = photos ? photos.length : 0;
+                document.getElementById('totalVotes').textContent = totalVotes;
+                
+            } catch (error) {
+                console.error('Errore nel caricamento delle statistiche:', error);
+            }
+        }
+        
+        // Carica foto segnalate
+        async function loadReportedPhotos() {
+            const reportedPhotosList = document.getElementById('reportedPhotosList');
+            reportedPhotosList.innerHTML = '<div class="loading">Caricamento foto segnalate...</div>';
+            
+            try {
+                // Ottieni le foto con report_count > 0 e status active
+                const { data: photos, error } = await supabase
+                    .from('photos')
+                    .select('*')
+                    .gt('report_count', 0)
+                    .eq('status', 'active')
+                    .order('report_count', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (!photos || photos.length === 0) {
+                    reportedPhotosList.innerHTML = '<div class="empty-state"><p>Nessuna foto segnalata</p></div>';
+                    return;
+                }
+                
+                reportedPhotosList.innerHTML = photos.map(photo => {
+                    const totalVotes = photo.smash_count + photo.pass_count;
+                    const smashPercentage = totalVotes > 0 ? 
+                        Math.round((photo.smash_count / totalVotes) * 100) : 0;
+                    
+                    return `
+                        <div class="reported-photo">
+                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                <img src="${photo.image_url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 10px; margin-right: 15px;">
+                                <div style="flex-grow: 1;">
+                                    <h4>${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'}</h4>
+                                    <p><strong>Segnalazioni:</strong> ${photo.report_count || 0}</p>
+                                    <p><strong>Smash:</strong> ${photo.smash_count} | <strong>Pass:</strong> ${photo.pass_count}</p>
+                                    <p><strong>Caricata il:</strong> ${new Date(photo.created_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="admin-actions">
+                                <button class="admin-btn approve-btn" onclick="approvePhoto('${photo.id}')">✅ Approva</button>
+                                <button class="admin-btn reject-btn" onclick="rejectPhoto('${photo.id}')">❌ Rimuovi</button>
+                                <button class="btn btn-secondary" onclick="suspendPhoto('${photo.id}')">⏸️ Sospendi</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Errore nel caricamento delle foto segnalate:', error);
+                reportedPhotosList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle foto segnalate</p></div>';
+            }
+        }
+        
+        // Carica foto sospese
+        async function loadSuspendedPhotos() {
+            const suspendedPhotosList = document.getElementById('suspendedPhotosList');
+            suspendedPhotosList.innerHTML = '<div class="loading">Caricamento foto sospese...</div>';
+            
+            try {
+                // Ottieni le foto con status = 'suspended'
+                const { data: photos, error } = await supabase
+                    .from('photos')
+                    .select('*')
+                    .eq('status', 'suspended')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (!photos || photos.length === 0) {
+                    suspendedPhotosList.innerHTML = '<div class="empty-state"><p>Nessuna foto sospesa</p></div>';
+                    return;
+                }
+                
+                suspendedPhotosList.innerHTML = photos.map(photo => {
+                    const totalVotes = photo.smash_count + photo.pass_count;
+                    const smashPercentage = totalVotes > 0 ? 
+                        Math.round((photo.smash_count / totalVotes) * 100) : 0;
+                    
+                    return `
+                        <div class="reported-photo">
+                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                <img src="${photo.image_url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 10px; margin-right: 15px;">
+                                <div>
+                                    <h4>${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'} <span class="suspended-badge">SOSPESA</span></h4>
+                                    <p><strong>Segnalazioni:</strong> ${photo.report_count || 0}</p>
+                                    <p><strong>Smash:</strong> ${photo.smash_count} | <strong>Pass:</strong> ${photo.pass_count}</p>
+                                    <p><strong>Caricata il:</strong> ${new Date(photo.created_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <div class="admin-actions">
+                                <button class="admin-btn approve-btn" onclick="approvePhoto('${photo.id}')">✅ Riattiva</button>
+                                <button class="admin-btn reject-btn" onclick="rejectPhoto('${photo.id}')">❌ Elimina</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Errore nel caricamento delle foto sospese:', error);
+                suspendedPhotosList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle foto sospese</p></div>';
+            }
+        }
+        
+        // Carica statistiche moderazione
+        async function loadModerationStats() {
+            const moderationStats = document.getElementById('moderationStats');
+            
+            try {
+                // Conta foto attive
+                const { data: activePhotos, error: activeError } = await supabase
+                    .from('photos')
+                    .select('id', { count: 'exact' })
+                    .eq('status', 'active');
+                
+                // Conta foto sospese
+                const { data: suspendedPhotos, error: suspendedError } = await supabase
+                    .from('photos')
+                    .select('id', { count: 'exact' })
+                    .eq('status', 'suspended');
+                
+                // Conta foto segnalate
+                const { data: reportedPhotos, error: reportedError } = await supabase
+                    .from('photos')
+                    .select('id', { count: 'exact' })
+                    .gt('report_count', 0);
+                
+                if (activeError || suspendedError || reportedError) {
+                    throw new Error('Errore nel caricamento delle statistiche');
+                }
+                
+                moderationStats.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center;">
+                        <div style="background: #d4edda; padding: 15px; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #155724;">${activePhotos.length || 0}</div>
+                            <div style="color: #155724;">Foto Attive</div>
+                        </div>
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #856404;">${suspendedPhotos.length || 0}</div>
+                            <div style="color: #856404;">Foto Sospese</div>
+                        </div>
+                        <div style="background: #f8d7da; padding: 15px; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #721c24;">${reportedPhotos.length || 0}</div>
+                            <div style="color: #721c24;">Foto Segnalate</div>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Errore nel caricamento delle statistiche:', error);
+                moderationStats.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle statistiche</p></div>';
+            }
+        }
+        
+        // Approva una foto (rimuove le segnalazioni)
+        async function approvePhoto(photoId) {
+            try {
+                const { error } = await supabase
+                    .from('photos')
+                    .update({ 
+                        report_count: 0,
+                        status: 'active'
+                    })
+                    .eq('id', photoId);
+                
+                if (error) throw error;
+                
+                showNotification('Foto approvata con successo!');
+                
+                // Ricarica le liste
+                loadReportedPhotos();
+                loadSuspendedPhotos();
+                loadModerationStats();
+                
+            } catch (error) {
+                console.error('Errore durante l\'approvazione:', error);
+                showNotification('Errore durante l\'approvazione. Riprova.', true);
+            }
+        }
+        
+        // Sospendi una foto manualmente
+        async function suspendPhoto(photoId) {
+            try {
+                const { error } = await supabase
+                    .from('photos')
+                    .update({ 
+                        status: 'suspended'
+                    })
+                    .eq('id', photoId);
+                
+                if (error) throw error;
+                
+                showNotification('Foto sospesa con successo!');
+                
+                // Ricarica le liste
+                loadReportedPhotos();
+                loadSuspendedPhotos();
+                loadModerationStats();
+                
+            } catch (error) {
+                console.error('Errore durante la sospensione:', error);
+                showNotification('Errore durante la sospensione. Riprova.', true);
+            }
+        }
+        
+        // Rifiuta/rimuovi una foto
+        async function rejectPhoto(photoId) {
+            if (!confirm('Sei sicuro di voler rimuovere questa foto? Questa azione non può essere annullata.')) {
+                return;
+            }
+            
+            try {
+                // Prima ottieni l'URL dell'immagine per eliminarla dallo storage
+                const { data: photo, error: fetchError } = await supabase
+                    .from('photos')
+                    .select('image_url')
+                    .eq('id', photoId)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                // Estrai il nome del file dall'URL
+                const imagePath = photo.image_url.split('/').pop();
+                
+                // Elimina l'immagine dallo storage
+                const { error: storageError } = await supabase.storage
+                    .from('photo-uploads')
+                    .remove([imagePath]);
+                
+                if (storageError) {
+                    console.error('Errore nell\'eliminazione dell\'immagine:', storageError);
+                    // Continua comunque con l'eliminazione del record
+                }
+                
+                // Elimina il record della foto
+                const { error } = await supabase
+                    .from('photos')
+                    .delete()
+                    .eq('id', photoId);
+                
+                if (error) throw error;
+                
+                showNotification('Foto rimossa con successo!');
+                
+                // Ricarica le liste
+                loadReportedPhotos();
+                loadSuspendedPhotos();
+                loadModerationStats();
+                
+            } catch (error) {
+                console.error('Errore durante la rimozione:', error);
+                showNotification('Errore durante la rimozione. Riprova.', true);
+            }
+        }
+        
+        // Upload foto
+        async function uploadPhoto() {
+            if (!selectedFile || !selectedGender) {
+                showNotification('Seleziona prima una foto e un genere!', true);
+                return;
+            }
+            
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Caricamento...';
+            
+            try {
+                // Genera un nome file unico
+                const fileExt = selectedFile.name.split('.').pop();
+                const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+                
+                // Upload dell'immagine a Supabase Storage
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('photo-uploads')
+                    .upload(fileName, selectedFile);
+                
+                if (uploadError) throw uploadError;
+                
+                // Ottieni l'URL pubblico dell'immagine
+                const { data: urlData } = supabase.storage
+                    .from('photo-uploads')
+                    .getPublicUrl(fileName);
+                
+                // Salva i metadati della foto nel database
+                const { error: dbError } = await supabase
+                    .from('photos')
+                    .insert([
+                        {
+                            image_url: urlData.publicUrl,
+                            gender: selectedGender,
+                            smash_count: 0,
+                            pass_count: 0,
+                            report_count: 0,
+                            status: 'active'
+                        }
+                    ]);
+                
+                if (dbError) throw dbError;
+                
+                showNotification('Foto caricata con successo!');
+                
+                // Resetta il form
+                setTimeout(() => {
+                    selectedFile = null;
+                    selectedGender = null;
+                    document.getElementById('previewImage').style.display = 'none';
+                    document.getElementById('fileInput').value = '';
+                    goToStep(1);
+                    
+                    // Resetta pulsanti genere
+                    document.querySelectorAll('#step1-content .gender-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    document.getElementById('nextToStep2').disabled = true;
+                    
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                showNotification('Errore durante il caricamento. Riprova.', true);
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '🚀 Carica Foto';
+            }
+        }
+        
+        // Apri modal di segnalazione
+        function openReportModal(photoId) {
+            currentPhotoForReport = photoId;
+            document.getElementById('reportModal').style.display = 'flex';
+        }
+        
+        // Invia segnalazione
+        async function submitReport() {
+            if (!currentPhotoForReport) return;
+            
+            const reason = document.getElementById('reportReason').value;
+            const details = document.getElementById('reportDetails').value;
+            
+            try {
+                // Prima ottieni il conteggio attuale dei report
+                const { data: photo, error: fetchError } = await supabase
+                    .from('photos')
+                    .select('report_count')
+                    .eq('id', currentPhotoForReport)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                // Incrementa il conteggio dei report
+                const { error: updateError } = await supabase
+                    .from('photos')
+                    .update({ 
+                        report_count: (photo.report_count || 0) + 1 
+                    })
+                    .eq('id', currentPhotoForReport);
+                
+                if (updateError) throw updateError;
+                
+                // Salva i dettagli del report in una tabella separata (se esiste)
+                try {
+                    const { error: reportError } = await supabase
+                        .from('reports')
+                        .insert([
+                            {
+                                photo_id: currentPhotoForReport,
+                                reason: reason,
+                                details: details,
+                                reported_at: new Date().toISOString()
+                            }
+                        ]);
+                    
+                    if (reportError) console.warn('Errore nel salvare i dettagli del report:', reportError);
+                } catch (e) {
+                    console.warn('Tabella reports non disponibile:', e);
+                }
+                
+                showNotification('Segnalazione inviata con successo!');
+                closeModal('reportModal');
+                
+                // Sospendi automaticamente se supera la soglia
+                if ((photo.report_count || 0) + 1 >= REPORT_THRESHOLD) {
+                    await suspendPhoto(currentPhotoForReport);
+                    showNotification('Foto sospesa automaticamente per troppe segnalazioni', false, 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Errore durante la segnalazione:', error);
+                showNotification('Errore durante la segnalazione. Riprova.', true);
+            }
+        }
         
         // Funzioni per i modal
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
-        }
-        
-        function openReportModal(photoId) {
-            currentPhotoForReport = photoId;
-            document.getElementById('reportModal').style.display = 'flex';
+            // Resetta i campi
+            if (modalId === 'reportModal') {
+                document.getElementById('reportReason').value = 'inappropriate';
+                document.getElementById('reportDetails').value = '';
+            }
         }
         
         function showNotification(message, isError = false, type = '') {
@@ -1967,21 +2256,59 @@
             }, 3000);
         }
         
-        // Per completezza, includo alcune funzioni essenziali
-        // che dovrebbero essere simili al codice precedente
-        
-        async function loadPhotosForVoting() {
-            // Implementazione simile al codice precedente
-            // Filtra solo le foto con status 'active'
+        // Esporta dati
+        function exportData() {
+            const data = {
+                voteHistory: voteHistory,
+                achievements: achievements,
+                exportDate: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `smash-or-pass-backup-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('Dati esportati con successo!');
         }
         
-        async function submitReport() {
-            // Implementazione simile al codice precedente
-            // Aggiunge report e aggiorna report_count
+        // Importa dati
+        function importData(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.voteHistory) {
+                        voteHistory = { ...voteHistory, ...data.voteHistory };
+                        localStorage.setItem('voteHistory', JSON.stringify(voteHistory));
+                    }
+                    
+                    if (data.achievements) {
+                        achievements = { ...achievements, ...data.achievements };
+                        localStorage.setItem('achievements', JSON.stringify(achievements));
+                    }
+                    
+                    showNotification('Dati importati con successo!');
+                    
+                    // Ricarica le view interessate
+                    if (document.getElementById('history-tab').classList.contains('active')) {
+                        loadVoteHistory();
+                    }
+                    if (document.getElementById('achievements-tab').classList.contains('active')) {
+                        loadAchievementsDisplay();
+                    }
+                    
+                } catch (error) {
+                    console.error('Errore nell\'importazione:', error);
+                    showNotification('Errore nell\'importazione. File non valido.', true);
+                }
+            };
+            reader.readAsText(file);
         }
-        
-        // ... altre funzioni necessarie
-        
     </script>
 </body>
 </html>
