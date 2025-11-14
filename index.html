@@ -1273,59 +1273,82 @@
             `;
         }
 
-        // SISTEMA DI SEGNALAZIONE CORRETTO
-        async function submitReport() {
-            if (!currentPhotoForReport) return;
+      // SISTEMA DI SEGNALAZIONE CORRETTO
+async function submitReport() {
+    if (!currentPhotoForReport) return;
+    
+    const reason = document.getElementById('reportReason').value;
+    const details = document.getElementById('reportDetails').value;
+    
+    try {
+        console.log('Iniziando segnalazione per foto:', currentPhotoForReport);
+        
+        // PRIMA: Verifica che la foto esista
+        const { data: photoExists, error: checkError } = await supabase
+            .from('photos')
+            .select('id')
+            .eq('id', currentPhotoForReport)
+            .single();
             
-            const reason = document.getElementById('reportReason').value;
-            const details = document.getElementById('reportDetails').value;
-            
-            try {
-                // Recupera i dati attuali della foto
-                const { data: currentPhoto, error: fetchError } = await supabase
-                    .from('photos')
-                    .select('report_count, status')
-                    .eq('id', currentPhotoForReport)
-                    .single();
-                
-                if (fetchError) throw new Error('Foto non trovata');
-                
-                // Salva il report
-                const { error: reportError } = await supabase
-                    .from('reports')
-                    .insert([{
-                        photo_id: currentPhotoForReport,
-                        reason: reason,
-                        details: details,
-                        reported_at: new Date().toISOString()
-                    }]);
-                
-                if (reportError) throw new Error('Errore nel salvataggio della segnalazione');
-                
-                // Incrementa il conteggio
-                const newReportCount = (currentPhoto.report_count || 0) + 1;
-                const { error: updateError } = await supabase
-                    .from('photos')
-                    .update({ report_count: newReportCount })
-                    .eq('id', currentPhotoForReport);
-                
-                if (updateError) throw new Error('Errore nell\'aggiornamento del conteggio');
-                
-                showNotification('Segnalazione inviata con successo!', false, 'success');
-                closeModal('reportModal');
-                
-                // Sospensione automatica
-                if (newReportCount >= REPORT_THRESHOLD && currentPhoto.status === 'active') {
-                    await suspendPhoto(currentPhotoForReport);
-                    showNotification('Foto sospesa automaticamente per troppe segnalazioni', false, 'warning');
-                }
-                
-            } catch (error) {
-                console.error('Errore durante la segnalazione:', error);
-                showNotification(error.message || 'Errore durante la segnalazione. Riprova.', true);
-            }
+        if (checkError || !photoExists) {
+            throw new Error('Foto non trovata nel database');
         }
-
+        
+        // SECONDO: Inserisci il report
+        const reportData = {
+            photo_id: currentPhotoForReport,
+            reason: reason,
+            details: details || null,
+            reported_at: new Date().toISOString()
+        };
+        
+        console.log('Inserendo report:', reportData);
+        
+        const { data: reportResult, error: reportError } = await supabase
+            .from('reports')
+            .insert([reportData])
+            .select();
+        
+        if (reportError) {
+            console.error('Errore Supabase:', reportError);
+            throw new Error(`Errore nel salvataggio: ${reportError.message}`);
+        }
+        
+        // TERZO: Aggiorna il conteggio delle segnalazioni nella foto
+        const { data: currentPhoto, error: fetchError } = await supabase
+            .from('photos')
+            .select('report_count, status')
+            .eq('id', currentPhotoForReport)
+            .single();
+        
+        if (fetchError) throw new Error('Errore nel recupero dati foto');
+        
+        const newReportCount = (currentPhoto.report_count || 0) + 1;
+        
+        const { error: updateError } = await supabase
+            .from('photos')
+            .update({ 
+                report_count: newReportCount,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', currentPhotoForReport);
+        
+        if (updateError) throw new Error('Errore nell\'aggiornamento del conteggio');
+        
+        showNotification('Segnalazione inviata con successo!', false, 'success');
+        closeModal('reportModal');
+        
+        // Sospensione automatica se raggiunge la soglia
+        if (newReportCount >= REPORT_THRESHOLD && currentPhoto.status === 'active') {
+            await suspendPhoto(currentPhotoForReport);
+            showNotification('Foto sospesa automaticamente per troppe segnalazioni', false, 'warning');
+        }
+        
+    } catch (error) {
+        console.error('Errore completo durante la segnalazione:', error);
+        showNotification(error.message || 'Errore durante la segnalazione. Riprova.', true);
+    }
+}
         async function suspendPhoto(photoId) {
             try {
                 const { error } = await supabase
@@ -2192,3 +2215,4 @@
     </script>
 </body>
 </html>
+
