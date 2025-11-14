@@ -392,20 +392,25 @@
             border-radius: 6px;
             overflow: hidden;
             margin-bottom: 8px;
+            position: relative;
         }
         
         .progress-fill {
             height: 100%;
-            width: 0%;
+            position: absolute;
+            top: 0;
+            left: 0;
             transition: width 0.5s ease;
         }
         
         .progress-fill.smash {
             background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            z-index: 2;
         }
         
         .progress-fill.pass {
             background: linear-gradient(90deg, #f44336, #ff9800);
+            z-index: 1;
         }
         
         .stats-single {
@@ -768,6 +773,22 @@
             font-size: 12px;
         }
         
+        .report-details {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            border-left: 4px solid #ff9800;
+        }
+        
+        .report-item {
+            background: white;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #e9ecef;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -931,6 +952,24 @@
         .logout-btn {
             margin-top: 20px;
         }
+        
+        .file-restrictions {
+            background: #e7f3ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #2a5298;
+        }
+        
+        .file-restrictions ul {
+            text-align: left;
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .file-restrictions li {
+            margin-bottom: 5px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -1008,12 +1047,21 @@
                 <h3>Step 2: Carica la tua foto</h3>
                 <p id="selected-gender-text">Stai caricando una foto di: <strong id="current-gender"></strong></p>
                 
+                <div class="file-restrictions">
+                    <h4>⚠️ Restrizioni File</h4>
+                    <ul>
+                        <li>✅ <strong>Accettati:</strong> JPEG, PNG, WebP (immagini statiche)</li>
+                        <li>❌ <strong>Non accettati:</strong> GIF animate, video, file eseguibili</li>
+                        <li>📏 <strong>Dimensione massima:</strong> 5MB</li>
+                    </ul>
+                </div>
+                
                 <div class="upload-area" id="uploadArea">
                     <i>📷</i>
                     <h3>Clicca qui per selezionare una foto</h3>
                     <p>Oppure trascina il file qui</p>
-                    <p style="font-size: 14px; color: #666; margin-top: 10px;">Dimensione massima: 5MB</p>
-                    <input type="file" id="fileInput" accept="image/*">
+                    <p style="font-size: 14px; color: #666; margin-top: 10px;">Solo immagini statiche (JPEG, PNG, WebP)</p>
+                    <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp">
                 </div>
                 
                 <div class="preview-container">
@@ -1321,152 +1369,441 @@
             loadStats();
         });
         
-        // Gestione Menu Laterale
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
+        // 🔧 CORREZIONE 1: VALIDAZIONE FILE MIGLIORATA
+        function handleFileSelection(file) {
+            if (!file) {
+                showNotification('Nessun file selezionato!', true);
+                return;
+            }
+            
+            // Controlla il tipo MIME
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            const fileExtension = file.name.toLowerCase().split('.').pop();
+            const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+            
+            // 🔥 CONTROLLO RINFORZATO: Blocca GIF e video
+            if (file.type === 'image/gif') {
+                showNotification('Le GIF animate non sono permesse! Carica solo immagini statiche.', true);
+                return;
+            }
+            
+            if (file.type.startsWith('video/')) {
+                showNotification('I video non sono permessi! Carica solo immagini.', true);
+                return;
+            }
+            
+            if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
+                showNotification('Tipo di file non supportato! Usa solo JPEG, PNG o WebP.', true);
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('L\'immagine è troppo grande! Massimo 5MB.', true);
+                return;
+            }
+            
+            // Controllo aggiuntivo: verifica che non sia un file eseguibile mascherato
+            if (file.type === 'application/octet-stream' || !file.type.startsWith('image/')) {
+                showNotification('Tipo di file non valido!', true);
+                return;
+            }
+            
+            selectedFile = file;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Controllo finale: verifica che sia davvero un'immagine
+                const img = new Image();
+                img.onload = function() {
+                    const previewImage = document.getElementById('previewImage');
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                    
+                    // Abilita pulsante Avanti
+                    document.getElementById('nextToStep3').disabled = false;
+                };
+                img.onerror = function() {
+                    showNotification('Il file selezionato non è un\'immagine valida!', true);
+                    return;
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                showNotification('Errore nella lettura del file!', true);
+                return;
+            };
+            reader.readAsDataURL(file);
         }
-        
-        function switchTab(tabName) {
-            // Chiudi il menu laterale su mobile
-            if (window.innerWidth <= 768) {
-                toggleSidebar();
+
+        // 🔧 CORREZIONE 2: BARRA PROGRESSO PASS (ROSSA) FUNZIONANTE
+        function showCurrentPhoto() {
+            const singlePhotoView = document.getElementById('singlePhotoView');
+            
+            if (currentPhotoIndex >= currentPhotos.length) {
+                singlePhotoView.innerHTML = `
+                    <div class="empty-state">
+                        <p>Hai visto tutte le foto disponibili!</p>
+                        <p>Torna più tardi per nuove foto o cambia genere.</p>
+                    </div>
+                `;
+                return;
             }
             
-            // Nascondi tutti i tab contents
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
+            const photo = currentPhotos[currentPhotoIndex];
+            const totalVotes = photo.smash_count + photo.pass_count;
+            const smashPercentage = totalVotes > 0 ? (photo.smash_count / totalVotes) * 100 : 0;
+            const passPercentage = totalVotes > 0 ? (photo.pass_count / totalVotes) * 100 : 0;
             
-            // 🔐 GESTIONE ACCESSO MODERAZIONE
-            if (tabName === 'moderation') {
-                if (!isModerationAuthenticated) {
-                    if (moderationAttempts > 0) {
-                        showPasswordModal();
-                        return;
-                    } else {
-                        showNotification('Hai esaurito i tentativi di accesso alla moderazione!', true);
-                        return;
-                    }
-                }
-            }
+            // Controlla se l'utente ha già votato questa foto
+            const userVote = voteHistory[photo.id];
             
-            // Mostra il tab selezionato
-            document.getElementById(`${tabName}-tab`).classList.add('active');
-            
-            // Aggiorna i link nel menu laterale
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('data-tab') === tabName) {
-                    link.classList.add('active');
-                }
-            });
-            
-            // Carica contenuti specifici
-            if (tabName === 'vote') {
-                loadPhotosForVoting();
-            } else if (tabName === 'history') {
-                loadVoteHistory();
-            } else if (tabName === 'leaderboard') {
-                loadLeaderboard();
-            } else if (tabName === 'achievements') {
-                loadAchievementsDisplay();
-            } else if (tabName === 'moderation' && isModerationAuthenticated) {
-                loadReportedPhotos();
-                loadSuspendedPhotos();
-                loadModerationStats();
-            } else if (tabName === 'settings') {
-                loadStats();
-            }
-        }
-        
-        // Inizializza tutti gli event listener
-        function initEventListeners() {
-            // Gestione selezione genere per upload
-            document.getElementById('maleBtn').addEventListener('click', function() {
-                selectGender('male');
-            });
-            
-            document.getElementById('femaleBtn').addEventListener('click', function() {
-                selectGender('female');
-            });
-            
-            // Gestione selezione genere per votazione
-            document.getElementById('voteMaleBtn').addEventListener('click', function() {
-                selectVoteGender('male');
-            });
-            
-            document.getElementById('voteFemaleBtn').addEventListener('click', function() {
-                selectVoteGender('female');
-            });
-            
-            // Gestione selezione file
-            document.getElementById('fileInput').addEventListener('change', function(e) {
-                if (e.target.files.length) {
-                    handleFileSelection(e.target.files[0]);
-                }
-            });
-            
-            // Gestione import file
-            document.getElementById('importFile').addEventListener('change', function(e) {
-                if (e.target.files.length) {
-                    importData(e.target.files[0]);
-                }
-            });
-            
-            // Gestione drag and drop
-            const uploadArea = document.getElementById('uploadArea');
-            
-            uploadArea.addEventListener('click', function() {
-                document.getElementById('fileInput').click();
-            });
-            
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.style.backgroundColor = '#f0f4ff';
-            });
-            
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.style.backgroundColor = '';
-            });
-            
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.style.backgroundColor = '';
+            singlePhotoView.innerHTML = `
+                <div class="photo-container">
+                    <img src="${photo.image_url}" class="current-photo" alt="Foto da votare" onerror="this.src='https://via.placeholder.com/400x500/2a5298/ffffff?text=Errore+Caricamento'">
+                </div>
                 
-                if (e.dataTransfer.files.length) {
-                    handleFileSelection(e.dataTransfer.files[0]);
-                }
-            });
+                <div class="progress-container-single">
+                    <div class="progress-bar-single">
+                        <div class="progress-fill smash" style="width: ${smashPercentage}%"></div>
+                        <div class="progress-fill pass" style="width: ${passPercentage}%"></div>
+                    </div>
+                    <div class="stats-single">
+                        <span class="smash-stat">${photo.smash_count} SMASH</span>
+                        <span class="pass-stat">${photo.pass_count} PASS</span>
+                    </div>
+                </div>
+                
+                ${userVote ? `
+                    <div style="text-align: center; margin: 20px 0;">
+                        <p><strong>Hai già votato: ${userVote === 'smash' ? '😍 SMASH' : '😐 PASS'}</strong></p>
+                        <button class="btn btn-secondary" onclick="currentPhotoIndex++; showCurrentPhoto();">
+                            Vota Prossima Foto
+                        </button>
+                        <button class="report-btn" onclick="openReportModal('${photo.id}')">
+                            ⚠️ Segnala
+                        </button>
+                    </div>
+                ` : `
+                    <div class="vote-buttons-single">
+                        <button class="pass-btn-single" onclick="voteCurrentPhoto('pass')">
+                            😐 PASS
+                        </button>
+                        <button class="smash-btn-single" onclick="voteCurrentPhoto('smash')">
+                            😍 SMASH
+                        </button>
+                    </div>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <button class="report-btn" onclick="openReportModal('${photo.id}')">
+                            ⚠️ Segnala questa foto
+                        </button>
+                    </div>
+                `}
+            `;
             
-            // Scorciatoie da tastiera
-            document.addEventListener('keydown', function(e) {
-                // Solo se siamo nella tab di votazione
-                if (document.getElementById('vote-tab').classList.contains('active')) {
-                    switch(e.key) {
-                        case 'ArrowLeft':
-                        case 'a':
-                        case 'A':
-                            voteCurrentPhoto('pass');
-                            break;
-                        case 'ArrowRight':
-                        case 'd':
-                        case 'D':
-                            voteCurrentPhoto('smash');
-                            break;
-                        case ' ':
-                            e.preventDefault();
-                            // Salta la foto corrente
-                            currentPhotoIndex++;
-                            showCurrentPhoto();
-                            break;
-                    }
-                }
-            });
+            // Aggiorna statistiche in tempo reale
+            updateLiveStats();
         }
-        
+
+        // 🔧 CORREZIONE 3: SISTEMA DI REPORT COMPLETO PER MODERATORI
+        async function loadReportedPhotos() {
+            const reportedPhotosList = document.getElementById('reportedPhotosList');
+            reportedPhotosList.innerHTML = '<div class="loading">Caricamento foto segnalate...</div>';
+            
+            try {
+                // Ottieni le foto con report_count > 0 e status active
+                const { data: photos, error } = await supabase
+                    .from('photos')
+                    .select('*')
+                    .gt('report_count', 0)
+                    .eq('status', 'active')
+                    .order('report_count', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (!photos || photos.length === 0) {
+                    reportedPhotosList.innerHTML = '<div class="empty-state"><p>Nessuna foto segnalata</p></div>';
+                    return;
+                }
+                
+                // Per ogni foto, carica i dettagli dei report
+                const photosWithReports = await Promise.all(
+                    photos.map(async (photo) => {
+                        const { data: reports } = await supabase
+                            .from('reports')
+                            .select('*')
+                            .eq('photo_id', photo.id)
+                            .order('reported_at', { ascending: false });
+                        
+                        return { ...photo, reports: reports || [] };
+                    })
+                );
+                
+                reportedPhotosList.innerHTML = photosWithReports.map(photoWithReports => {
+                    const photo = photoWithReports;
+                    const reports = photoWithReports.reports;
+                    const totalVotes = photo.smash_count + photo.pass_count;
+                    const smashPercentage = totalVotes > 0 ? 
+                        Math.round((photo.smash_count / totalVotes) * 100) : 0;
+                    
+                    return `
+                        <div class="reported-photo">
+                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                <img src="${photo.image_url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 10px; margin-right: 15px;" onerror="this.style.display='none'">
+                                <div style="flex-grow: 1;">
+                                    <h4>${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'}</h4>
+                                    <p><strong>Segnalazioni:</strong> ${photo.report_count || 0}</p>
+                                    <p><strong>Smash:</strong> ${photo.smash_count} | <strong>Pass:</strong> ${photo.pass_count}</p>
+                                    <p><strong>Caricata il:</strong> ${new Date(photo.created_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- DETTAGLI DEI REPORT -->
+                            <div class="report-details" style="display: ${reports.length > 0 ? 'block' : 'none'}">
+                                <h5>📋 Dettagli Segnalazioni (${reports.length})</h5>
+                                ${reports.map(report => `
+                                    <div class="report-item">
+                                        <p><strong>Motivo:</strong> ${getReportReasonText(report.reason)}</p>
+                                        ${report.details ? `<p><strong>Dettagli:</strong> ${report.details}</p>` : ''}
+                                        <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                                            Segnalato il: ${new Date(report.reported_at).toLocaleString()}
+                                        </p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <div class="admin-actions">
+                                <button class="admin-btn approve-btn" onclick="approvePhoto('${photo.id}')">✅ Approva</button>
+                                <button class="admin-btn reject-btn" onclick="rejectPhoto('${photo.id}')">❌ Rimuovi</button>
+                                <button class="btn btn-secondary" onclick="suspendPhoto('${photo.id}')">⏸️ Sospendi</button>
+                                <button class="btn btn-secondary" onclick="showAllReports('${photo.id}')">📋 Tutti i Report</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Errore nel caricamento delle foto segnalate:', error);
+                reportedPhotosList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle foto segnalate</p></div>';
+            }
+        }
+
+        // 🔧 CORREZIONE 4: FUNZIONE PER MOSTRARE TUTTI I REPORT DI UNA FOTO
+        async function showAllReports(photoId) {
+            try {
+                const { data: photo, error: photoError } = await supabase
+                    .from('photos')
+                    .select('*')
+                    .eq('id', photoId)
+                    .single();
+                
+                if (photoError) throw photoError;
+                
+                const { data: reports, error: reportsError } = await supabase
+                    .from('reports')
+                    .select('*')
+                    .eq('photo_id', photoId)
+                    .order('reported_at', { ascending: false });
+                
+                if (reportsError) throw reportsError;
+                
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.style.display = 'flex';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>📋 Tutte le Segnalazioni</h3>
+                            <button class="close-modal" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
+                        </div>
+                        <div>
+                            <div style="text-align: center; margin-bottom: 15px;">
+                                <img src="${photo.image_url}" style="max-width: 200px; max-height: 200px; border-radius: 10px; margin-bottom: 10px;" onerror="this.style.display='none'">
+                                <p><strong>${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'}</strong></p>
+                            </div>
+                            
+                            <h4>Segnalazioni (${reports.length})</h4>
+                            ${reports.length > 0 ? 
+                                reports.map(report => `
+                                    <div class="report-item" style="margin-bottom: 10px; padding: 10px; border-radius: 5px; background: #f8f9fa;">
+                                        <p><strong>Motivo:</strong> ${getReportReasonText(report.reason)}</p>
+                                        ${report.details ? `<p><strong>Dettagli utente:</strong> "${report.details}"</p>` : '<p><em>Nessun dettaglio aggiuntivo</em></p>'}
+                                        <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                                            Segnalato il: ${new Date(report.reported_at).toLocaleString()}
+                                        </p>
+                                    </div>
+                                `).join('') 
+                                : '<p>Nessuna segnalazione trovata.</p>'
+                            }
+                            
+                            <div style="margin-top: 20px; text-align: center;">
+                                <button class="btn btn-primary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                    Chiudi
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+            } catch (error) {
+                console.error('Errore nel caricamento dei report:', error);
+                showNotification('Errore nel caricamento dei report dettagliati', true);
+            }
+        }
+
+        // 🔧 CORREZIONE 5: FUNZIONE PER TRADURRE I MOTIVI DEI REPORT
+        function getReportReasonText(reason) {
+            const reasons = {
+                'inappropriate': '🚫 Contenuto inappropriato',
+                'sexual': '🔞 Contenuto sessuale',
+                'fake': '🤥 Foto non reale/falsa',
+                'other': '❓ Altro'
+            };
+            return reasons[reason] || reason;
+        }
+
+        // 🔧 CORREZIONE 6: INVIO REPORT MIGLIORATO
+        async function submitReport() {
+            if (!currentPhotoForReport) return;
+            
+            const reason = document.getElementById('reportReason').value;
+            const details = document.getElementById('reportDetails').value;
+            
+            try {
+                // PRIMA: Salva i dettagli del report nella tabella reports
+                const { error: reportError } = await supabase
+                    .from('reports')
+                    .insert([
+                        {
+                            photo_id: currentPhotoForReport,
+                            reason: reason,
+                            details: details,
+                            reported_at: new Date().toISOString()
+                        }
+                    ]);
+                
+                if (reportError) throw reportError;
+                
+                // SECONDA: Incrementa il conteggio dei report nella foto
+                const { data: photo, error: fetchError } = await supabase
+                    .from('photos')
+                    .select('report_count')
+                    .eq('id', currentPhotoForReport)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                const { error: updateError } = await supabase
+                    .from('photos')
+                    .update({ 
+                        report_count: (photo.report_count || 0) + 1 
+                    })
+                    .eq('id', currentPhotoForReport);
+                
+                if (updateError) throw updateError;
+                
+                showNotification('Segnalazione inviata con successo! I dettagli sono stati salvati.');
+                closeModal('reportModal');
+                
+                // Sospendi automaticamente se supera la soglia
+                if ((photo.report_count || 0) + 1 >= REPORT_THRESHOLD) {
+                    await suspendPhoto(currentPhotoForReport);
+                    showNotification('Foto sospesa automaticamente per troppe segnalazioni', false, 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Errore durante la segnalazione:', error);
+                showNotification('Errore durante la segnalazione. Riprova.', true);
+            }
+        }
+
+        // 🔧 CORREZIONE 7: CARICAMENTO FOTO SOSPESE CON REPORT
+        async function loadSuspendedPhotos() {
+            const suspendedPhotosList = document.getElementById('suspendedPhotosList');
+            suspendedPhotosList.innerHTML = '<div class="loading">Caricamento foto sospese...</div>';
+            
+            try {
+                // Ottieni le foto con status = 'suspended'
+                const { data: photos, error } = await supabase
+                    .from('photos')
+                    .select('*')
+                    .eq('status', 'suspended')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (!photos || photos.length === 0) {
+                    suspendedPhotosList.innerHTML = '<div class="empty-state"><p>Nessuna foto sospesa</p></div>';
+                    return;
+                }
+                
+                // Per ogni foto sospesa, carica i report
+                const photosWithReports = await Promise.all(
+                    photos.map(async (photo) => {
+                        const { data: reports } = await supabase
+                            .from('reports')
+                            .select('*')
+                            .eq('photo_id', photo.id)
+                            .order('reported_at', { ascending: false });
+                        
+                        return { ...photo, reports: reports || [] };
+                    })
+                );
+                
+                suspendedPhotosList.innerHTML = photosWithReports.map(photoWithReports => {
+                    const photo = photoWithReports;
+                    const reports = photoWithReports.reports;
+                    const totalVotes = photo.smash_count + photo.pass_count;
+                    const smashPercentage = totalVotes > 0 ? 
+                        Math.round((photo.smash_count / totalVotes) * 100) : 0;
+                    
+                    return `
+                        <div class="reported-photo">
+                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                <img src="${photo.image_url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 10px; margin-right: 15px;" onerror="this.style.display='none'">
+                                <div>
+                                    <h4>${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'} <span class="suspended-badge">SOSPESA</span></h4>
+                                    <p><strong>Segnalazioni:</strong> ${photo.report_count || 0}</p>
+                                    <p><strong>Smash:</strong> ${photo.smash_count} | <strong>Pass:</strong> ${photo.pass_count}</p>
+                                    <p><strong>Caricata il:</strong> ${new Date(photo.created_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- DETTAGLI DEI REPORT -->
+                            <div class="report-details" style="display: ${reports.length > 0 ? 'block' : 'none'}">
+                                <h5>📋 Ultime Segnalazioni</h5>
+                                ${reports.slice(0, 2).map(report => `
+                                    <div class="report-item">
+                                        <p><strong>Motivo:</strong> ${getReportReasonText(report.reason)}</p>
+                                        ${report.details ? `<p><strong>Dettagli:</strong> ${report.details}</p>` : ''}
+                                    </div>
+                                `).join('')}
+                                ${reports.length > 2 ? 
+                                    `<p style="text-align: center; margin-top: 10px;">
+                                        <button class="btn btn-secondary" onclick="showAllReports('${photo.id}')" style="padding: 5px 10px; font-size: 12px;">
+                                            Vedi tutte le ${reports.length} segnalazioni
+                                        </button>
+                                    </p>` 
+                                    : ''
+                                }
+                            </div>
+                            
+                            <div class="admin-actions">
+                                <button class="admin-btn approve-btn" onclick="approvePhoto('${photo.id}')">✅ Riattiva</button>
+                                <button class="admin-btn reject-btn" onclick="rejectPhoto('${photo.id}')">❌ Elimina</button>
+                                <button class="btn btn-secondary" onclick="showAllReports('${photo.id}')">📋 Tutti i Report</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Errore nel caricamento delle foto sospese:', error);
+                suspendedPhotosList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle foto sospese</p></div>';
+            }
+        }
+
         // 🔐 FUNZIONI DI VERIFICA PASSWORD CON SUPABASE
         async function verifyPasswordWithSupabase(password) {
             try {
@@ -1711,32 +2048,6 @@
             loadPhotosForVoting();
         }
         
-        // Gestione selezione file
-        function handleFileSelection(file) {
-            if (!file || !file.type.match('image.*')) {
-                showNotification('Seleziona solo file immagine!', true);
-                return;
-            }
-            
-            if (file.size > 5 * 1024 * 1024) {
-                showNotification('L\'immagine è troppo grande! Massimo 5MB.', true);
-                return;
-            }
-            
-            selectedFile = file;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const previewImage = document.getElementById('previewImage');
-                previewImage.src = e.target.result;
-                previewImage.style.display = 'block';
-                
-                // Abilita pulsante Avanti
-                document.getElementById('nextToStep3').disabled = false;
-            };
-            reader.readAsDataURL(file);
-        }
-        
         // Carica foto per la votazione
         async function loadPhotosForVoting() {
             const singlePhotoView = document.getElementById('singlePhotoView');
@@ -1797,71 +2108,6 @@
                     </div>
                 `;
             }
-        }
-        
-        // Mostra la foto corrente per la votazione
-        function showCurrentPhoto() {
-            const singlePhotoView = document.getElementById('singlePhotoView');
-            
-            if (currentPhotoIndex >= currentPhotos.length) {
-                singlePhotoView.innerHTML = `
-                    <div class="empty-state">
-                        <p>Hai visto tutte le foto disponibili!</p>
-                        <p>Torna più tardi per nuove foto o cambia genere.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            const photo = currentPhotos[currentPhotoIndex];
-            
-            // Controlla se l'utente ha già votato questa foto (doppio controllo)
-            const userVote = voteHistory[photo.id];
-            
-            singlePhotoView.innerHTML = `
-                <div class="photo-container">
-                    <img src="${photo.image_url}" class="current-photo" alt="Foto da votare" onerror="this.src='https://via.placeholder.com/400x500/2a5298/ffffff?text=Errore+Caricamento'">
-                </div>
-                
-                <div class="progress-container-single">
-                    <div class="progress-bar-single">
-                        <div class="progress-fill smash" style="width: ${photo.smash_count + photo.pass_count > 0 ? (photo.smash_count / (photo.smash_count + photo.pass_count)) * 100 : 0}%"></div>
-                    </div>
-                    <div class="stats-single">
-                        <span class="smash-stat">${photo.smash_count} SMASH</span>
-                        <span class="pass-stat">${photo.pass_count} PASS</span>
-                    </div>
-                </div>
-                
-                ${userVote ? `
-                    <div style="text-align: center; margin: 20px 0;">
-                        <p><strong>Hai già votato: ${userVote === 'smash' ? '😍 SMASH' : '😐 PASS'}</strong></p>
-                        <button class="btn btn-secondary" onclick="currentPhotoIndex++; showCurrentPhoto();">
-                            Vota Prossima Foto
-                        </button>
-                        <button class="report-btn" onclick="openReportModal('${photo.id}')">
-                            ⚠️ Segnala
-                        </button>
-                    </div>
-                ` : `
-                    <div class="vote-buttons-single">
-                        <button class="pass-btn-single" onclick="voteCurrentPhoto('pass')">
-                            😐 PASS
-                        </button>
-                        <button class="smash-btn-single" onclick="voteCurrentPhoto('smash')">
-                            😍 SMASH
-                        </button>
-                    </div>
-                    <div style="text-align: center; margin-top: 15px;">
-                        <button class="report-btn" onclick="openReportModal('${photo.id}')">
-                            ⚠️ Segnala questa foto
-                        </button>
-                    </div>
-                `}
-            `;
-            
-            // Aggiorna statistiche in tempo reale
-            updateLiveStats();
         }
         
         // Vota la foto corrente
@@ -2206,159 +2452,6 @@
             }
         }
         
-        // Carica foto segnalate
-        async function loadReportedPhotos() {
-            const reportedPhotosList = document.getElementById('reportedPhotosList');
-            reportedPhotosList.innerHTML = '<div class="loading">Caricamento foto segnalate...</div>';
-            
-            try {
-                // Ottieni le foto con report_count > 0 e status active
-                const { data: photos, error } = await supabase
-                    .from('photos')
-                    .select('*')
-                    .gt('report_count', 0)
-                    .eq('status', 'active')
-                    .order('report_count', { ascending: false });
-                
-                if (error) throw error;
-                
-                if (!photos || photos.length === 0) {
-                    reportedPhotosList.innerHTML = '<div class="empty-state"><p>Nessuna foto segnalata</p></div>';
-                    return;
-                }
-                
-                reportedPhotosList.innerHTML = photos.map(photo => {
-                    const totalVotes = photo.smash_count + photo.pass_count;
-                    const smashPercentage = totalVotes > 0 ? 
-                        Math.round((photo.smash_count / totalVotes) * 100) : 0;
-                    
-                    return `
-                        <div class="reported-photo">
-                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                                <img src="${photo.image_url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 10px; margin-right: 15px;" onerror="this.style.display='none'">
-                                <div style="flex-grow: 1;">
-                                    <h4>${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'}</h4>
-                                    <p><strong>Segnalazioni:</strong> ${photo.report_count || 0}</p>
-                                    <p><strong>Smash:</strong> ${photo.smash_count} | <strong>Pass:</strong> ${photo.pass_count}</p>
-                                    <p><strong>Caricata il:</strong> ${new Date(photo.created_at).toLocaleDateString()}</p>
-                                </div>
-                            </div>
-                            
-                            <div class="admin-actions">
-                                <button class="admin-btn approve-btn" onclick="approvePhoto('${photo.id}')">✅ Approva</button>
-                                <button class="admin-btn reject-btn" onclick="rejectPhoto('${photo.id}')">❌ Rimuovi</button>
-                                <button class="btn btn-secondary" onclick="suspendPhoto('${photo.id}')">⏸️ Sospendi</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-            } catch (error) {
-                console.error('Errore nel caricamento delle foto segnalate:', error);
-                reportedPhotosList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle foto segnalate</p></div>';
-            }
-        }
-        
-        // Carica foto sospese
-        async function loadSuspendedPhotos() {
-            const suspendedPhotosList = document.getElementById('suspendedPhotosList');
-            suspendedPhotosList.innerHTML = '<div class="loading">Caricamento foto sospese...</div>';
-            
-            try {
-                // Ottieni le foto con status = 'suspended'
-                const { data: photos, error } = await supabase
-                    .from('photos')
-                    .select('*')
-                    .eq('status', 'suspended')
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                
-                if (!photos || photos.length === 0) {
-                    suspendedPhotosList.innerHTML = '<div class="empty-state"><p>Nessuna foto sospesa</p></div>';
-                    return;
-                }
-                
-                suspendedPhotosList.innerHTML = photos.map(photo => {
-                    const totalVotes = photo.smash_count + photo.pass_count;
-                    const smashPercentage = totalVotes > 0 ? 
-                        Math.round((photo.smash_count / totalVotes) * 100) : 0;
-                    
-                    return `
-                        <div class="reported-photo">
-                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                                <img src="${photo.image_url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 10px; margin-right: 15px;" onerror="this.style.display='none'">
-                                <div>
-                                    <h4>${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'} <span class="suspended-badge">SOSPESA</span></h4>
-                                    <p><strong>Segnalazioni:</strong> ${photo.report_count || 0}</p>
-                                    <p><strong>Smash:</strong> ${photo.smash_count} | <strong>Pass:</strong> ${photo.pass_count}</p>
-                                    <p><strong>Caricata il:</strong> ${new Date(photo.created_at).toLocaleDateString()}</p>
-                                </div>
-                            </div>
-                            <div class="admin-actions">
-                                <button class="admin-btn approve-btn" onclick="approvePhoto('${photo.id}')">✅ Riattiva</button>
-                                <button class="admin-btn reject-btn" onclick="rejectPhoto('${photo.id}')">❌ Elimina</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-            } catch (error) {
-                console.error('Errore nel caricamento delle foto sospese:', error);
-                suspendedPhotosList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle foto sospese</p></div>';
-            }
-        }
-        
-        // Carica statistiche moderazione
-        async function loadModerationStats() {
-            const moderationStats = document.getElementById('moderationStats');
-            
-            try {
-                // Conta foto attive
-                const { data: activePhotos, error: activeError } = await supabase
-                    .from('photos')
-                    .select('id', { count: 'exact' })
-                    .eq('status', 'active');
-                
-                // Conta foto sospese
-                const { data: suspendedPhotos, error: suspendedError } = await supabase
-                    .from('photos')
-                    .select('id', { count: 'exact' })
-                    .eq('status', 'suspended');
-                
-                // Conta foto segnalate
-                const { data: reportedPhotos, error: reportedError } = await supabase
-                    .from('photos')
-                    .select('id', { count: 'exact' })
-                    .gt('report_count', 0);
-                
-                if (activeError || suspendedError || reportedError) {
-                    throw new Error('Errore nel caricamento delle statistiche');
-                }
-                
-                moderationStats.innerHTML = `
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center;">
-                        <div style="background: #d4edda; padding: 15px; border-radius: 8px;">
-                            <div style="font-size: 24px; font-weight: bold; color: #155724;">${activePhotos.length || 0}</div>
-                            <div style="color: #155724;">Foto Attive</div>
-                        </div>
-                        <div style="background: #fff3cd; padding: 15px; border-radius: 8px;">
-                            <div style="font-size: 24px; font-weight: bold; color: #856404;">${suspendedPhotos.length || 0}</div>
-                            <div style="color: #856404;">Foto Sospese</div>
-                        </div>
-                        <div style="background: #f8d7da; padding: 15px; border-radius: 8px;">
-                            <div style="font-size: 24px; font-weight: bold; color: #721c24;">${reportedPhotos.length || 0}</div>
-                            <div style="color: #721c24;">Foto Segnalate</div>
-                        </div>
-                    </div>
-                `;
-                
-            } catch (error) {
-                console.error('Errore nel caricamento delle statistiche:', error);
-                moderationStats.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle statistiche</p></div>';
-            }
-        }
-        
         // Approva una foto (rimuove le segnalazioni)
         async function approvePhoto(photoId) {
             try {
@@ -2371,6 +2464,12 @@
                     .eq('id', photoId);
                 
                 if (error) throw error;
+                
+                // Segna i report come risolti
+                await supabase
+                    .from('reports')
+                    .update({ resolved: true })
+                    .eq('photo_id', photoId);
                 
                 showNotification('Foto approvata con successo!');
                 
@@ -2537,66 +2636,6 @@
             document.getElementById('reportModal').style.display = 'flex';
         }
         
-        // Invia segnalazione
-        async function submitReport() {
-            if (!currentPhotoForReport) return;
-            
-            const reason = document.getElementById('reportReason').value;
-            const details = document.getElementById('reportDetails').value;
-            
-            try {
-                // Prima ottieni il conteggio attuale dei report
-                const { data: photo, error: fetchError } = await supabase
-                    .from('photos')
-                    .select('report_count')
-                    .eq('id', currentPhotoForReport)
-                    .single();
-                
-                if (fetchError) throw fetchError;
-                
-                // Incrementa il conteggio dei report
-                const { error: updateError } = await supabase
-                    .from('photos')
-                    .update({ 
-                        report_count: (photo.report_count || 0) + 1 
-                    })
-                    .eq('id', currentPhotoForReport);
-                
-                if (updateError) throw updateError;
-                
-                // Salva i dettagli del report in una tabella separata (se esiste)
-                try {
-                    const { error: reportError } = await supabase
-                        .from('reports')
-                        .insert([
-                            {
-                                photo_id: currentPhotoForReport,
-                                reason: reason,
-                                details: details,
-                                reported_at: new Date().toISOString()
-                            }
-                        ]);
-                    
-                    if (reportError) console.warn('Errore nel salvare i dettagli del report:', reportError);
-                } catch (e) {
-                    console.warn('Tabella reports non disponibile:', e);
-                }
-                
-                showNotification('Segnalazione inviata con successo!');
-                closeModal('reportModal');
-                
-                // Sospendi automaticamente se supera la soglia
-                if ((photo.report_count || 0) + 1 >= REPORT_THRESHOLD) {
-                    await suspendPhoto(currentPhotoForReport);
-                    showNotification('Foto sospesa automaticamente per troppe segnalazioni', false, 'warning');
-                }
-                
-            } catch (error) {
-                console.error('Errore durante la segnalazione:', error);
-                showNotification('Errore durante la segnalazione. Riprova.', true);
-            }
-        }
-        
         // Funzioni per i modal
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
@@ -2629,6 +2668,201 @@
             }, 3000);
         }
         
+        // Carica statistiche moderazione
+        async function loadModerationStats() {
+            const moderationStats = document.getElementById('moderationStats');
+            
+            try {
+                // Conta foto attive
+                const { data: activePhotos, error: activeError } = await supabase
+                    .from('photos')
+                    .select('id', { count: 'exact' })
+                    .eq('status', 'active');
+                
+                // Conta foto sospese
+                const { data: suspendedPhotos, error: suspendedError } = await supabase
+                    .from('photos')
+                    .select('id', { count: 'exact' })
+                    .eq('status', 'suspended');
+                
+                // Conta report totali
+                const { data: totalReports, error: reportsError } = await supabase
+                    .from('reports')
+                    .select('id', { count: 'exact' });
+                
+                if (activeError || suspendedError || reportsError) {
+                    throw new Error('Errore nel caricamento delle statistiche');
+                }
+                
+                moderationStats.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center;">
+                        <div style="background: #d4edda; padding: 15px; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #155724;">${activePhotos.length || 0}</div>
+                            <div style="color: #155724;">Foto Attive</div>
+                        </div>
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #856404;">${suspendedPhotos.length || 0}</div>
+                            <div style="color: #856404;">Foto Sospese</div>
+                        </div>
+                        <div style="background: #f8d7da; padding: 15px; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #721c24;">${totalReports.length || 0}</div>
+                            <div style="color: #721c24;">Report Totali</div>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Errore nel caricamento delle statistiche:', error);
+                moderationStats.innerHTML = '<div class="empty-state"><p>Errore nel caricamento delle statistiche</p></div>';
+            }
+        }
+
+        // Inizializza tutti gli event listener
+        function initEventListeners() {
+            // Gestione selezione genere per upload
+            document.getElementById('maleBtn').addEventListener('click', function() {
+                selectGender('male');
+            });
+            
+            document.getElementById('femaleBtn').addEventListener('click', function() {
+                selectGender('female');
+            });
+            
+            // Gestione selezione genere per votazione
+            document.getElementById('voteMaleBtn').addEventListener('click', function() {
+                selectVoteGender('male');
+            });
+            
+            document.getElementById('voteFemaleBtn').addEventListener('click', function() {
+                selectVoteGender('female');
+            });
+            
+            // Gestione selezione file
+            document.getElementById('fileInput').addEventListener('change', function(e) {
+                if (e.target.files.length) {
+                    handleFileSelection(e.target.files[0]);
+                }
+            });
+            
+            // Gestione import file
+            document.getElementById('importFile').addEventListener('change', function(e) {
+                if (e.target.files.length) {
+                    importData(e.target.files[0]);
+                }
+            });
+            
+            // Gestione drag and drop
+            const uploadArea = document.getElementById('uploadArea');
+            
+            uploadArea.addEventListener('click', function() {
+                document.getElementById('fileInput').click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '#f0f4ff';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.backgroundColor = '';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '';
+                
+                if (e.dataTransfer.files.length) {
+                    handleFileSelection(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // Scorciatoie da tastiera
+            document.addEventListener('keydown', function(e) {
+                // Solo se siamo nella tab di votazione
+                if (document.getElementById('vote-tab').classList.contains('active')) {
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                        case 'a':
+                        case 'A':
+                            voteCurrentPhoto('pass');
+                            break;
+                        case 'ArrowRight':
+                        case 'd':
+                        case 'D':
+                            voteCurrentPhoto('smash');
+                            break;
+                        case ' ':
+                            e.preventDefault();
+                            // Salta la foto corrente
+                            currentPhotoIndex++;
+                            showCurrentPhoto();
+                            break;
+                    }
+                }
+            });
+        }
+
+        // Gestione Menu Laterale
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+        
+        function switchTab(tabName) {
+            // Chiudi il menu laterale su mobile
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+            
+            // Nascondi tutti i tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 🔐 GESTIONE ACCESSO MODERAZIONE
+            if (tabName === 'moderation') {
+                if (!isModerationAuthenticated) {
+                    if (moderationAttempts > 0) {
+                        showPasswordModal();
+                        return;
+                    } else {
+                        showNotification('Hai esaurito i tentativi di accesso alla moderazione!', true);
+                        return;
+                    }
+                }
+            }
+            
+            // Mostra il tab selezionato
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Aggiorna i link nel menu laterale
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('data-tab') === tabName) {
+                    link.classList.add('active');
+                }
+            });
+            
+            // Carica contenuti specifici
+            if (tabName === 'vote') {
+                loadPhotosForVoting();
+            } else if (tabName === 'history') {
+                loadVoteHistory();
+            } else if (tabName === 'leaderboard') {
+                loadLeaderboard();
+            } else if (tabName === 'achievements') {
+                loadAchievementsDisplay();
+            } else if (tabName === 'moderation' && isModerationAuthenticated) {
+                loadReportedPhotos();
+                loadSuspendedPhotos();
+                loadModerationStats();
+            } else if (tabName === 'settings') {
+                loadStats();
+            }
+        }
+
         // Esporta dati
         function exportData() {
             const data = {
