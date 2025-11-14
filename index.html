@@ -2141,57 +2141,52 @@
         }
         
         async function loadLeaderboard() {
-            const leaderboardList = document.getElementById('leaderboardList');
-            leaderboardList.innerHTML = '<div class="loading">Caricamento classifica...</div>';
-            
-            try {
-                let query = supabase
-                    .from('photos')
-                    .select('*')
-                    .eq('status', 'active')
-                    .order('smash_count', { ascending: false })
-                    .limit(20);
-                
-                if (currentLeaderboardFilter !== 'all') {
-                    query = query.eq('gender', currentLeaderboardFilter);
-                }
-                
-                const { data: photos, error } = await query;
-                
-                if (error) throw error;
-                
-                if (!photos || photos.length === 0) {
-                    leaderboardList.innerHTML = '<div class="empty-state"><p>Nessuna foto in classifica.</p></div>';
-                    return;
-                }
-                
-                leaderboardList.innerHTML = photos.map((photo, index) => {
-                    const totalVotes = photo.smash_count + photo.pass_count;
-                    const smashPercentage = totalVotes > 0 ? Math.round((photo.smash_count / totalVotes) * 100) : 0;
-                    
-                    return `
-                        <div class="leaderboard-item">
-                            <div class="leaderboard-rank">${index + 1}</div>
-                            <img src="${photo.image_url}" class="leaderboard-photo" alt="Foto" onerror="this.style.display='none'">
-                            <div class="leaderboard-info">
-                                <h4>${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'}</h4>
-                                <p><strong>Smash Rate:</strong> ${smashPercentage}%</p>
-                                <p><strong>Voti Totali:</strong> ${totalVotes}</p>
-                            </div>
-                            <div class="leaderboard-score">
-                                ${photo.smash_count} 😍
-                            </div>
-                            <button class="report-btn" onclick="openReportModal('${photo.id}')">
-                                ⚠️
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-                
-            } catch (error) {
-                console.error('Errore nel caricamento della classifica:', error);
-                leaderboardList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento della classifica.</p></div>';
-            }
+    const leaderboardList = document.getElementById('leaderboardList');
+    leaderboardList.innerHTML = '<div class="loading">Caricamento classifica...</div>';
+    
+    try {
+        let query = supabase
+            .from('photos')
+            .select('*')
+            .eq('status', 'active')
+            .order('smash_count', { ascending: false })
+            .limit(20);
+        
+        if (currentLeaderboardFilter !== 'all') {
+            query = query.eq('gender', currentLeaderboardFilter);
+        }
+        
+        const { data: photos, error } = await query;
+        
+        if (error) throw error;
+        
+        if (!photos || photos.length === 0) {
+            leaderboardList.innerHTML = '<div class="empty-state"><p>Nessuna foto in classifica.</p></div>';
+            return;
+        }
+        
+        leaderboardList.innerHTML = photos.map((photo, index) => {
+            return `
+                <div class="leaderboard-item">
+                    <div class="leaderboard-rank">${index + 1}</div>
+                    <img src="${photo.image_url}" class="leaderboard-photo" alt="Foto" onerror="this.style.display='none'">
+                    <div class="leaderboard-info">
+                        <h4>${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'}</h4>
+                    </div>
+                    <div class="leaderboard-score">
+                        ${photo.smash_count} 😍
+                    </div>
+                    <button class="report-btn" onclick="openReportModal('${photo.id}')">
+                        ⚠️
+                    </button>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Errore nel caricamento della classifica:', error);
+        leaderboardList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento della classifica.</p></div>';
+    }
         }
         
         function filterLeaderboard(filter) {
@@ -2593,3 +2588,4 @@
     </script>
 </body>
 </html>
+
