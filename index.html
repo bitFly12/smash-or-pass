@@ -2048,87 +2048,112 @@
             }
         }
         
-        async function loadVoteHistory() {
-            const historyList = document.getElementById('historyList');
-            historyList.innerHTML = '<div class="loading">Caricamento cronologia...</div>';
+        async function loadVoteHistory() { const historyList = document.getElementById('historyList');
+    historyList.innerHTML = '<div class="loading">Caricamento cronologia...</div>';
 
-            try {
-                const historyEntries = Object.entries(voteHistory);
-                
-                if (historyEntries.length === 0) {
-                    historyList.innerHTML = '<div class="empty-state"><p>Non hai ancora votato nessuna foto.</p></div>';
-                    return;
-                }
+    try {
+        const historyEntries = Object.entries(voteHistory);
+        
+        if (historyEntries.length === 0) {
+            historyList.innerHTML = '<div class="empty-state"><p>Non hai ancora votato nessuna foto.</p></div>';
+            return;
+        }
 
-                const photoIds = historyEntries.map(([photoId]) => photoId);
-                const { data: photos, error } = await supabase
-                    .from('photos')
-                    .select('*')
-                    .in('id', photoIds);
+        const photoIds = historyEntries.map(([photoId]) => photoId);
+        const { data: photos, error } = await supabase
+            .from('photos')
+            .select('*')
+            .in('id', photoIds);
 
-                if (error) throw error;
+        if (error) throw error;
 
-                const photosMap = {};
-                if (photos) {
-                    photos.forEach(photo => {
-                        photosMap[photo.id] = photo;
-                    });
-                }
+        // 🔄 FILTRA E RIMUOVI LE FOTO CHE NON ESISTONO PIÙ
+        const photosMap = {};
+        const existingPhotoIds = new Set();
+        
+        if (photos) {
+            photos.forEach(photo => {
+                photosMap[photo.id] = photo;
+                existingPhotoIds.add(photo.id);
+            });
+        }
 
-                const filteredEntries = historyEntries.filter(([photoId, vote]) => {
-                    if (currentHistoryFilter === 'all') return true;
-                    return vote === currentHistoryFilter;
-                });
-
-                if (filteredEntries.length === 0) {
-                    historyList.innerHTML = '<div class="empty-state"><p>Nessun voto corrisponde al filtro selezionato.</p></div>';
-                    return;
-                }
-
-                historyList.innerHTML = filteredEntries.map(([photoId, vote]) => {
-                    const photo = photosMap[photoId];
-                    
-                    if (!photo) {
-                        return `
-                            <div class="history-item">
-                                <div class="history-info">
-                                    <p><strong>Foto ID:</strong> ${photoId.substring(0, 8)}...</p>
-                                    <p><strong>Voto:</strong> ${vote === 'smash' ? '😍 SMASH' : '😐 PASS'}</p>
-                                    <p><em>Foto non più disponibile</em></p>
-                                </div>
-                                <div class="history-vote ${vote}">
-                                    ${vote === 'smash' ? 'SMASH' : 'PASS'}
-                                </div>
-                            </div>
-                        `;
-                    }
-
-                    const oppositeVote = vote === 'smash' ? 'pass' : 'smash';
-                    const oppositeText = vote === 'smash' ? 'PASS' : 'SMASH';
-                    const oppositeEmoji = vote === 'smash' ? '😐' : '😍';
-
-                    return `
-                        <div class="history-item">
-                            <img src="${photo.image_url}" class="history-photo" alt="Foto votata" onerror="this.style.display='none'">
-                            <div class="history-info">
-                                <p><strong>Genere:</strong> ${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'}</p>
-                                <p><strong>Statistiche:</strong> ${photo.smash_count} 😍 | ${photo.pass_count} 😐</p>
-                                <p><strong>Il tuo voto:</strong> ${vote === 'smash' ? '😍 SMASH' : '😐 PASS'}</p>
-                            </div>
-                            <div class="history-vote ${vote}">
-                                ${vote === 'smash' ? 'SMASH' : 'PASS'}
-                            </div>
-                            <button class="change-vote-btn" onclick="changeVote('${photo.id}', '${oppositeVote}')">
-                                Cambia in ${oppositeEmoji} ${oppositeText}
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-
-            } catch (error) {
-                console.error('Errore nel caricamento della cronologia:', error);
-                historyList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento della cronologia.</p></div>';
+        // Rimuovi dalla cronologia locale le foto che non esistono più
+        let updatedVoteHistory = { ...voteHistory };
+        let removedCount = 0;
+        
+        Object.keys(voteHistory).forEach(photoId => {
+            if (!existingPhotoIds.has(photoId)) {
+                delete updatedVoteHistory[photoId];
+                removedCount++;
             }
+        });
+
+        // Aggiorna il localStorage se sono state rimosse delle foto
+        if (removedCount > 0) {
+            voteHistory = updatedVoteHistory;
+            localStorage.setItem('voteHistory', JSON.stringify(voteHistory));
+            console.log(`Rimosse ${removedCount} foto non più esistenti dalla cronologia`);
+        }
+
+        // Aggiorna historyEntries con i dati filtrati
+        const filteredHistoryEntries = Object.entries(voteHistory);
+
+        const finalFilteredEntries = filteredHistoryEntries.filter(([photoId, vote]) => {
+            if (currentHistoryFilter === 'all') return true;
+            return vote === currentHistoryFilter;
+        });
+
+        if (finalFilteredEntries.length === 0) {
+            historyList.innerHTML = '<div class="empty-state"><p>Nessun voto corrisponde al filtro selezionato.</p></div>';
+            return;
+        }
+
+        historyList.innerHTML = finalFilteredEntries.map(([photoId, vote]) => {
+            const photo = photosMap[photoId];
+            
+            // Questa condizione non dovrebbe mai verificarsi ora, ma la lasciamo per sicurezza
+            if (!photo) {
+                return `
+                    <div class="history-item">
+                        <div class="history-info">
+                            <p><strong>Foto ID:</strong> ${photoId.substring(0, 8)}...</p>
+                            <p><strong>Voto:</strong> ${vote === 'smash' ? '😍 SMASH' : '😐 PASS'}</p>
+                            <p><em>Foto rimossa - aggiorna la pagina</em></p>
+                        </div>
+                        <div class="history-vote ${vote}">
+                            ${vote === 'smash' ? 'SMASH' : 'PASS'}
+                        </div>
+                    </div>
+                `;
+            }
+
+            const oppositeVote = vote === 'smash' ? 'pass' : 'smash';
+            const oppositeText = vote === 'smash' ? 'PASS' : 'SMASH';
+            const oppositeEmoji = vote === 'smash' ? '😐' : '😍';
+
+            return `
+                <div class="history-item">
+                    <img src="${photo.image_url}" class="history-photo" alt="Foto votata" onerror="this.style.display='none'">
+                    <div class="history-info">
+                        <p><strong>Genere:</strong> ${photo.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'}</p>
+                        <p><strong>Statistiche:</strong> ${photo.smash_count} 😍 | ${photo.pass_count} 😐</p>
+                        <p><strong>Il tuo voto:</strong> ${vote === 'smash' ? '😍 SMASH' : '😐 PASS'}</p>
+                    </div>
+                    <div class="history-vote ${vote}">
+                        ${vote === 'smash' ? 'SMASH' : 'PASS'}
+                    </div>
+                    <button class="change-vote-btn" onclick="changeVote('${photo.id}', '${oppositeVote}')">
+                        Cambia in ${oppositeEmoji} ${oppositeText}
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Errore nel caricamento della cronologia:', error);
+        historyList.innerHTML = '<div class="empty-state"><p>Errore nel caricamento della cronologia.</p></div>';
+    }
         }
         
         function filterHistory(filter) {
@@ -2588,4 +2613,5 @@
     </script>
 </body>
 </html>
+
 
