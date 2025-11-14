@@ -927,6 +927,10 @@
             border-radius: 5px;
             font-size: 16px;
         }
+        
+        .logout-btn {
+            margin-top: 20px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -1156,6 +1160,12 @@
                         <div class="loading">Caricamento statistiche...</div>
                     </div>
                 </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-secondary logout-btn" onclick="logoutModeration()">
+                        🚪 Esci dalla Moderazione
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -1202,10 +1212,38 @@
                 <button class="close-modal" onclick="closeModal('passwordModal')">×</button>
             </div>
             <div>
-                <p>Inserisci la password per accedere al pannello di moderazione:</p>
-                <input type="password" id="moderationPassword" class="password-input" placeholder="Password">
-                <p id="attemptsInfo" style="color: #666; font-size: 14px; margin: 10px 0;">Tentativi rimanenti: 3</p>
-                <button class="btn btn-primary" onclick="checkModerationPassword()" style="width: 100%;">Accedi</button>
+                <p>Inserisci la password di moderazione:</p>
+                <input type="password" id="moderationPasswordInput" class="password-input" placeholder="Password">
+                <p id="attemptsInfo" style="color: #666; font-size: 14px; margin: 10px 0;">
+                    Tentativi rimanenti: 3
+                </p>
+                <button class="btn btn-primary" onclick="handlePasswordSubmit()" style="width: 100%;">
+                    Accedi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal per cambio password -->
+    <div class="modal" id="changePasswordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔄 Cambia Password Moderazione</h3>
+                <button class="close-modal" onclick="closeModal('changePasswordModal')">×</button>
+            </div>
+            <div>
+                <p>Vecchia Password:</p>
+                <input type="password" id="oldPasswordInput" class="password-input" placeholder="Vecchia password">
+                
+                <p>Nuova Password:</p>
+                <input type="password" id="newPasswordInput" class="password-input" placeholder="Nuova password">
+                
+                <p>Conferma Nuova Password:</p>
+                <input type="password" id="confirmPasswordInput" class="password-input" placeholder="Conferma password">
+                
+                <button class="btn btn-primary" onclick="handlePasswordChange()" style="width: 100%; margin-top: 15px;">
+                    🔄 Cambia Password
+                </button>
             </div>
         </div>
     </div>
@@ -1247,7 +1285,7 @@
     <div class="notification" id="notification"></div>
 
     <script>
-        // 🔥 DATI SUPABASE - INSERITI CON I TUOI DATI
+        // 🔥 CONFIGURAZIONE SUPABASE
         const SUPABASE_URL = 'https://rreyuxxnyhhahwkjxfiv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyZXl1eHhueWhoYWh3a2p4Zml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwMjIyNDgsImV4cCI6MjA3ODU5ODI0OH0.F_ZnqK10o8h-IY23_g9RzkPHqQVbpAvjQmw0awlApBE';
         
@@ -1269,8 +1307,9 @@
         // 🔐 SISTEMA PASSWORD MODERAZIONE
         let moderationAttempts = 3;
         let isModerationAuthenticated = false;
-        const MODERATION_PASSWORD = "Buryang67"; // Cambia questa password!
-        
+        let lastAttemptTime = 0;
+        const ATTEMPT_COOLDOWN = 30000; // 30 secondi
+
         // Soglia per sospensione automatica
         const REPORT_THRESHOLD = 3;
         
@@ -1309,8 +1348,6 @@
                         return;
                     } else {
                         showNotification('Hai esaurito i tentativi di accesso alla moderazione!', true);
-                        // Nascondi la voce del menu
-                        document.querySelector('[data-tab="moderation"]').parentElement.style.display = 'none';
                         return;
                     }
                 }
@@ -1430,42 +1467,180 @@
             });
         }
         
-        // 🔐 FUNZIONI PER GESTIONE PASSWORD MODERAZIONE
+        // 🔐 FUNZIONI DI VERIFICA PASSWORD CON SUPABASE
+        async function verifyPasswordWithSupabase(password) {
+            try {
+                console.log('Verifica password in corso...');
+                
+                // Chiama la funzione PostgreSQL
+                const { data, error } = await supabase
+                    .rpc('verify_moderation_access', { input_key: password });
+                
+                if (error) {
+                    console.error('Errore Supabase:', error);
+                    return false;
+                }
+                
+                console.log('Risposta Supabase:', data);
+                return data.valid;
+                
+            } catch (error) {
+                console.error('Errore nella verifica password:', error);
+                return false;
+            }
+        }
+
+        async function checkModerationPassword(inputPassword) {
+            const now = Date.now();
+            
+            // Controlla cooldown
+            if (moderationAttempts <= 0 && (now - lastAttemptTime) < ATTEMPT_COOLDOWN) {
+                const remainingTime = Math.ceil((ATTEMPT_COOLDOWN - (now - lastAttemptTime)) / 1000);
+                showNotification(`Attendi ${remainingTime} secondi prima di riprovare`, true);
+                return false;
+            }
+            
+            // Verifica la password con Supabase
+            const isValid = await verifyPasswordWithSupabase(inputPassword);
+            
+            if (!isValid) {
+                moderationAttempts--;
+                lastAttemptTime = now;
+                
+                if (moderationAttempts <= 0) {
+                    showNotification('Accesso bloccato. Attendi 30 secondi.', true);
+                    setTimeout(() => {
+                        moderationAttempts = 3;
+                        showNotification('Puoi riprovare ora', false, 'info');
+                    }, ATTEMPT_COOLDOWN);
+                } else {
+                    showNotification(`Password errata! Tentativi rimanenti: ${moderationAttempts}`, true);
+                }
+            } else {
+                moderationAttempts = 3; // Reset tentativi
+                isModerationAuthenticated = true;
+                showNotification('Accesso moderazione consentito!', false, 'success');
+            }
+            
+            return isValid;
+        }
+
+        // 🔧 FUNZIONE PER CAMBIARE PASSWORD (SOLO SE AUTENTICATO)
+        async function changeModerationPassword(oldPassword, newPassword) {
+            if (!isModerationAuthenticated) {
+                showNotification('Devi prima accedere alla moderazione!', true);
+                return false;
+            }
+            
+            try {
+                // Verifica la vecchia password
+                const isOldValid = await verifyPasswordWithSupabase(oldPassword);
+                if (!isOldValid) {
+                    showNotification('Vecchia password errata!', true);
+                    return false;
+                }
+                
+                // Aggiorna con la nuova password
+                const { error } = await supabase
+                    .from('moderation_access')
+                    .update({ 
+                        access_key: newPassword,
+                        last_used: new Date().toISOString()
+                    })
+                    .eq('access_key', oldPassword);
+                
+                if (error) throw error;
+                
+                showNotification('Password cambiata con successo!', false, 'success');
+                return true;
+                
+            } catch (error) {
+                console.error('Errore nel cambio password:', error);
+                showNotification('Errore nel cambio password', true);
+                return false;
+            }
+        }
+
+        // 🎯 GESTIONE ACCESSO MODERAZIONE
         function showPasswordModal() {
             document.getElementById('passwordModal').style.display = 'flex';
             document.getElementById('attemptsInfo').textContent = `Tentativi rimanenti: ${moderationAttempts}`;
-            document.getElementById('moderationPassword').value = '';
-            document.getElementById('moderationPassword').focus();
+            document.getElementById('moderationPasswordInput').value = '';
+            document.getElementById('moderationPasswordInput').focus();
         }
-        
-        function checkModerationPassword() {
-            const passwordInput = document.getElementById('moderationPassword');
+
+        async function handlePasswordSubmit() {
+            const passwordInput = document.getElementById('moderationPasswordInput');
             const password = passwordInput.value;
             
-            if (password === MODERATION_PASSWORD) {
-                isModerationAuthenticated = true;
+            if (!password) {
+                showNotification('Inserisci una password!', true);
+                return;
+            }
+            
+            const isValid = await checkModerationPassword(password);
+            
+            if (isValid) {
+                // Chiudi il modal
                 closeModal('passwordModal');
-                showNotification('Accesso consentito! Benvenuto nel pannello di moderazione.', false, 'info');
                 
                 // Mostra il tab moderazione
                 switchTab('moderation');
-                
             } else {
-                moderationAttempts--;
-                showNotification(`Password errata! Tentativi rimanenti: ${moderationAttempts}`, true);
-                document.getElementById('attemptsInfo').textContent = `Tentativi rimanenti: ${moderationAttempts}`;
+                // Aggiorna il contatore nel modal
+                const attemptsInfo = document.getElementById('attemptsInfo');
+                if (attemptsInfo) {
+                    attemptsInfo.textContent = `Tentativi rimanenti: ${moderationAttempts}`;
+                }
                 passwordInput.value = '';
                 passwordInput.focus();
-                
-                if (moderationAttempts <= 0) {
-                    closeModal('passwordModal');
-                    showNotification('Accesso alla moderazione bloccato. Hai esaurito i tentativi.', true);
-                    // Nascondi la voce del menu moderazione
-                    document.querySelector('[data-tab="moderation"]').parentElement.style.display = 'none';
-                }
             }
         }
-        
+
+        function showChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'flex';
+            document.getElementById('oldPasswordInput').value = '';
+            document.getElementById('newPasswordInput').value = '';
+            document.getElementById('confirmPasswordInput').value = '';
+        }
+
+        async function handlePasswordChange() {
+            const oldPassword = document.getElementById('oldPasswordInput').value;
+            const newPassword = document.getElementById('newPasswordInput').value;
+            const confirmPassword = document.getElementById('confirmPasswordInput').value;
+            
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                showNotification('Compila tutti i campi!', true);
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showNotification('Le nuove password non coincidono!', true);
+                return;
+            }
+            
+            if (newPassword.length < 4) {
+                showNotification('La password deve essere di almeno 4 caratteri!', true);
+                return;
+            }
+            
+            const success = await changeModerationPassword(oldPassword, newPassword);
+            
+            if (success) {
+                closeModal('changePasswordModal');
+            }
+        }
+
+        // 🚪 FUNZIONE PER LOGOUT MODERAZIONE
+        function logoutModeration() {
+            isModerationAuthenticated = false;
+            showNotification('Disconnesso dalla moderazione', false, 'info');
+            
+            if (document.getElementById('moderation-tab').classList.contains('active')) {
+                switchTab('upload');
+            }
+        }
+
         // Gestione passaggi
         function goToStep(step) {
             // Nascondi tutti i contenuti dei passaggi
@@ -2443,6 +2618,8 @@
                 notification.classList.add('info');
             } else if (type === 'warning') {
                 notification.classList.add('warning');
+            } else if (type === 'success') {
+                notification.classList.add('success');
             }
             
             notification.classList.add('show');
@@ -2508,4 +2685,3 @@
     </script>
 </body>
 </html>
-
