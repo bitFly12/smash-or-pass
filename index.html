@@ -2320,7 +2320,16 @@
             }
             updateReputationDisplay();
         }
+function initDarkMode() {
+    const isDarkMode = localStorage.getItem('darkMode') === 'true';
+    document.body.classList.toggle('dark-mode', isDarkMode);
+    document.getElementById('darkModeToggle').checked = isDarkMode;
+}
 
+function updateDarkMode(isDark) {
+    document.body.classList.toggle('dark-mode', isDark);
+    localStorage.setItem('darkMode', isDark);
+}
         function updateReputationDisplay() {
             const reputationDisplay = document.getElementById('reputationDisplay');
             const currentRepPoints = document.getElementById('currentRepPoints');
@@ -2495,7 +2504,7 @@
                         pass_count: 0,
                         report_count: 0,
                         status: 'active',
-                        uploaded_by: userUniqueId,
+                    
                         photo_type: 'votation'
                     }])
                     .select()
@@ -2575,7 +2584,7 @@
                             battle_wins: 0,
                             report_count: 0,
                             status: 'active',
-                            uploaded_by: userUniqueId,
+                        
                             photo_type: 'battle'
                         }])
                         .select()
@@ -4909,6 +4918,38 @@ function switchToModerationTab(photoId = null) {
         }
     }
 }
+        function showPasswordModal() {
+    moderationAttempts = 3;
+    document.getElementById('attemptsInfo').textContent = `Tentativi rimanenti: ${moderationAttempts}`;
+    document.getElementById('moderationPasswordInput').value = '';
+    document.getElementById('passwordModal').style.display = 'flex';
+}
+
+function handlePasswordSubmit() {
+    const password = document.getElementById('moderationPasswordInput').value;
+    // Add your password validation logic here
+    if (password === 'your_moderation_password') { // Change this password
+        isModerationAuthenticated = true;
+        closeModal('passwordModal');
+        loadReportedPhotos();
+        showNotification('Accesso moderazione autorizzato!', false, 'success');
+    } else {
+        moderationAttempts--;
+        document.getElementById('attemptsInfo').textContent = `Tentativi rimanenti: ${moderationAttempts}`;
+        if (moderationAttempts <= 0) {
+            closeModal('passwordModal');
+            showNotification('Accesso negato! Tentativi esauriti.', true);
+        } else {
+            showNotification('Password errata! Riprova.', true);
+        }
+    }
+}
+
+function logoutModeration() {
+    isModerationAuthenticated = false;
+    showNotification('Disconnesso dalla moderazione.', false, 'info');
+    switchTab('upload');
+}
 
 function highlightReportedPhoto(photoId) {
     const reportedPhotos = document.querySelectorAll('.reported-photo');
@@ -5011,6 +5052,32 @@ function initEventListeners() {
         }
     });
 }
+        function handleFileSelection(file) {
+    if (!file) return;
+    
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    
+    if (!allowedTypes.includes(file.type)) {
+        showNotification('Tipo di file non supportato! Usa solo JPEG, PNG o WebP.', true);
+        return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+        showNotification('L\'immagine è troppo grande! Massimo 5MB.', true);
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const previewImage = document.getElementById('previewImage');
+        previewImage.src = e.target.result;
+        previewImage.style.display = 'block';
+        document.getElementById('nextToStep3').disabled = false;
+        
+        selectedFile = file;
+    };
+    reader.readAsDataURL(file);
+}
 
 // =============================================
 // FUNZIONI NAVIGAZIONE
@@ -5035,7 +5102,7 @@ function switchTab(tabName) {
     if (tabName === 'moderation') {
         if (!isModerationAuthenticated) {
             if (moderationAttempts > 0) {
-                showPasswordModal();
+            showPasswordModal();
                 return;
             } else {
                 showNotification('Hai esaurito i tentativi di accesso!', true);
@@ -5202,7 +5269,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPhotosForVoting();
     loadAchievements();
     loadStats();
-    initDarkMode();
+
     
     if (!hasAcceptedTerms) {
         setTimeout(() => {
@@ -5223,3 +5290,4 @@ document.addEventListener('DOMContentLoaded', function() {
     </script>
 </body>
 </html>
+
