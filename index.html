@@ -1020,10 +1020,673 @@
         .file-restrictions li {
             margin-bottom: 5px;
         }
+		/* ============================================ */
+/* STILI BATTAGLIE E TERMINI - AGGIUNGI QUI */
+/* ============================================ */
+
+/* Badge NEW */
+.new-badge {
+    background: linear-gradient(135deg, #FF6B6B, #FFD93D);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 8px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Stili Battaglia */
+.battle-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.battle-arena {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    justify-content: center;
+    margin: 30px 0;
+}
+
+.battle-slot {
+    flex: 1;
+    max-width: 350px;
+    background: #f9f9f9;
+    border: 3px dashed #ddd;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    min-height: 450px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.battle-slot.filled {
+    border: 3px solid #2a5298;
+    background: white;
+}
+
+.battle-slot.winning {
+    border-color: #4CAF50;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+}
+
+.battle-slot-empty {
+    cursor: pointer;
+    padding: 40px;
+}
+
+.battle-slot-empty:hover {
+    background: #f0f4ff;
+    border-color: #2a5298;
+}
+
+.battle-slot-empty h3 {
+    font-size: 48px;
+    color: #ddd;
+    margin-bottom: 15px;
+}
+
+.battle-photo {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+.battle-vs {
+    font-size: 48px;
+    font-weight: bold;
+    color: #2a5298;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    animation: pulse-vs 2s infinite;
+}
+
+@keyframes pulse-vs {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.battle-timer {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.battle-timer h3 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.battle-timer .time {
+    font-size: 36px;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.battle-progress {
+    margin: 20px 0;
+}
+
+.battle-progress-bar {
+    height: 30px;
+    background: #e0e0e0;
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+}
+
+.battle-progress-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+
+.battle-progress-fill.left {
+    background: linear-gradient(90deg, #FF6B6B, #FF8E53);
+}
+
+.battle-progress-fill.right {
+    background: linear-gradient(90deg, #4FACFE, #00F2FE);
+}
+
+.battle-vote-btn {
+    width: 100%;
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.battle-vote-btn.left {
+    background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+    color: white;
+}
+
+.battle-vote-btn.right {
+    background: linear-gradient(135deg, #4FACFE, #00F2FE);
+    color: white;
+}
+
+.battle-vote-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.battle-vote-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.battle-stats {
+    display: flex;
+    justify-content: space-around;
+    margin: 20px 0;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 10px;
+}
+
+.battle-stat-item {
+    text-align: center;
+}
+
+.battle-stat-item .value {
+    font-size: 32px;
+    font-weight: bold;
+    color: #2a5298;
+}
+
+.battle-stat-item .label {
+    font-size: 14px;
+    color: #666;
+}
+
+.battle-history-item {
+    background: #f9f9f9;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+}
+
+.battle-history-photos {
+    display: flex;
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.battle-history-photo-container {
+    flex: 1;
+    text-align: center;
+}
+
+.battle-history-photo-container img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.battle-history-photo-container.winner {
+    position: relative;
+}
+
+.battle-history-photo-container.winner::after {
+    content: '👑 VINCITORE';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #FFD700;
+    color: #333;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.photo-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.photo-selector-item {
+    position: relative;
+    cursor: pointer;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.photo-selector-item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.photo-selector-item img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.photo-selector-item.in-battle {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.photo-selector-item.in-battle::after {
+    content: '⚔️ IN BATTAGLIA';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+/* Stili Termini e Condizioni */
+.terms-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.95);
+    z-index: 99999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(10px);
+}
+
+.terms-container {
+    background: white;
+    max-width: 800px;
+    width: 90%;
+    max-height: 85vh;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: slideUp 0.5s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.terms-header {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    padding: 30px;
+    text-align: center;
+}
+
+.terms-header h1 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.terms-header p {
+    opacity: 0.9;
+    font-size: 0.95rem;
+}
+
+.terms-content {
+    padding: 30px;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    line-height: 1.8;
+}
+
+.terms-content h2 {
+    color: #2a5298;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+    border-bottom: 2px solid #2a5298;
+    padding-bottom: 8px;
+}
+
+.terms-content h3 {
+    color: #1e3c72;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.terms-content p {
+    margin-bottom: 12px;
+    color: #333;
+}
+
+.terms-content ul {
+    margin-left: 25px;
+    margin-bottom: 15px;
+}
+
+.terms-content li {
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.terms-highlight {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 5px;
+}
+
+.terms-highlight strong {
+    color: #856404;
+}
+
+.terms-footer {
+    padding: 20px 30px;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    flex-shrink: 0;
+}
+
+.terms-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.terms-checkbox-container:hover {
+    border-color: #2a5298;
+}
+
+.terms-checkbox-container input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.terms-checkbox-container label {
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.terms-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.terms-accept-btn {
+    flex: 1;
+    padding: 15px;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.terms-accept-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.terms-accept-btn:disabled {
+    background: #cccccc !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+.terms-decline-btn {
+    flex: 1;
+    padding: 15px;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.terms-decline-btn:hover {
+    background: #da190b;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+}
+
+/* Dark mode per battaglie e termini */
+body.dark-mode .battle-slot,
+body.dark-mode .battle-history-item {
+    background: #3d3d3d;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+body.dark-mode .terms-container {
+    background: #2d2d2d;
+    color: #e0e0e0;
+}
+
+body.dark-mode .terms-content h2,
+body.dark-mode .terms-content h3,
+body.dark-mode .terms-content p,
+body.dark-mode .terms-content li {
+    color: #e0e0e0;
+}
+
+body.dark-mode .terms-footer {
+    background: #1a1a1a;
+}
+
+body.dark-mode .terms-checkbox-container {
+    background: #3d3d3d;
+    border-color: #555;
+}
+
+body.dark-mode .terms-checkbox-container label {
+    color: #e0e0e0;
+}
+
+/* Responsive per battaglie */
+@media (max-width: 768px) {
+    .battle-arena {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .battle-slot {
+        max-width: 100%;
+    }
+    
+    .battle-vs {
+        font-size: 32px;
+    }
+    
+    .battle-history-photos {
+        flex-direction: column;
+    }
+    
+    .photo-selector-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+    
+    .terms-container {
+        width: 95%;
+    }
+    
+    .terms-content {
+        padding: 20px;
+    }
+    
+    .terms-buttons {
+        flex-direction: column;
+    }
+	@media (max-width: 768px) {
+    /* ... codice esistente ... */
+    
+    .terms-container {
+        width: 95%;
+        max-height: 90vh;
+    }
+    
+    .terms-content {
+        padding: 20px;
+        max-height: none;
+    }
+    
+    .terms-footer {
+        padding: 15px 20px;
+    }
+    
+    .terms-buttons {
+        flex-direction: column;
+    }
+}
+}
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="no-select no-context-menu" oncontextmenu="return false;">
+<!-- TERMINI E CONDIZIONI OVERLAY -->
+    <div class="terms-overlay" id="termsOverlay" style="display: none;">
+        <div class="terms-container">
+            <div class="terms-header">
+                <h1>📋 Termini e Condizioni d'Uso</h1>
+                <p>Smash or Pass - Cesaris Edition</p>
+            </div>
+            
+            <div class="terms-content">
+                <div class="terms-highlight">
+                    <strong>⚠️ IMPORTANTE:</strong> Si prega di leggere attentamente i seguenti termini prima di utilizzare il servizio.
+                </div>
+
+                <h2>1. Accettazione dei Termini</h2>
+                <p>Accedendo e utilizzando questa piattaforma, l'utente accetta integralmente i presenti Termini e Condizioni d'Uso.</p>
+
+                <h2>2. Descrizione del Servizio</h2>
+                <p>La piattaforma permette agli utenti di:</p>
+                <ul>
+                    <li>Caricare foto in modo anonimo</li>
+                    <li>Votare foto caricate da altri utenti</li>
+                    <li>Partecipare a battaglie fotografiche</li>
+                    <li>Visualizzare classifiche e statistiche</li>
+                </ul>
+
+                <h2>3. Responsabilità dell'Utente</h2>
+                <h3>3.1 Contenuti Caricati</h3>
+                <p><strong>L'utente è l'unico e solo responsabile per tutti i contenuti che carica sulla piattaforma.</strong> Caricando una foto, l'utente dichiara e garantisce che:</p>
+                <ul>
+                    <li>Possiede tutti i diritti necessari sulla foto caricata</li>
+                    <li>Ha ottenuto il consenso esplicito di tutte le persone ritratte nella foto</li>
+                    <li>La foto non viola alcun diritto di terzi</li>
+                    <li>La foto non contiene contenuti illegali, diffamatori o inappropriati</li>
+                </ul>
+
+                <h3>3.2 Comportamento dell'Utente</h3>
+                <p>L'utente si impegna a:</p>
+                <ul>
+                    <li>Utilizzare la piattaforma in modo rispettoso</li>
+                    <li>Non caricare contenuti sessualmente espliciti, violenti o illegali</li>
+                    <li>Rispettare la privacy e la dignità di tutte le persone</li>
+                    <li>Segnalare immediatamente contenuti inappropriati</li>
+                </ul>
+
+                <h2>4. Limitazione di Responsabilità</h2>
+                <div class="terms-highlight">
+                    <strong>DICHIARAZIONE IMPORTANTE:</strong>
+                    <p style="margin-top: 10px;">Il gestore della piattaforma <strong>NON è responsabile</strong> per:</p>
+                </div>
+                <ul>
+                    <li><strong>Contenuti caricati dagli utenti:</strong> Ogni utente è personalmente responsabile</li>
+                    <li><strong>Violazioni della privacy:</strong> La responsabilità è esclusivamente dell'utente</li>
+                    <li><strong>Violazioni del copyright:</strong> L'utente ne è l'unico responsabile</li>
+                    <li><strong>Conseguenze legali:</strong> A carico esclusivo dell'utente</li>
+                    <li><strong>Danni diretti o indiretti</strong></li>
+                </ul>
+
+                <h2>5. Contenuti Proibiti</h2>
+                <p>È severamente vietato caricare:</p>
+                <ul>
+                    <li>Contenuti sessualmente espliciti o pornografici</li>
+                    <li>Contenuti violenti o disturbanti</li>
+                    <li>Contenuti che incitano all'odio o alla violenza</li>
+                    <li>Contenuti illegali</li>
+                    <li>Foto di persone senza consenso</li>
+                </ul>
+
+                <div class="terms-highlight">
+                    <strong>📌 RIEPILOGO:</strong>
+                    <p style="margin-top: 10px;">Utilizzando questa piattaforma, l'utente riconosce di essere l'unico responsabile per tutti i contenuti che carica. Il gestore agisce esclusivamente come fornitore di infrastruttura tecnica.</p>
+                </div>
+
+                <p style="margin-top: 30px; text-align: center; color: #666; font-size: 0.9rem;">
+                    <strong>Data ultimo aggiornamento:</strong> Novembre 2024<br>
+                    <strong>Versione:</strong> 2.0
+                </p>
+            </div>
+            
+            <div class="terms-footer">
+                <div class="terms-checkbox-container">
+                    <input type="checkbox" id="termsCheckbox">
+                    <label for="termsCheckbox">
+                        <strong>Ho letto e accetto i Termini e Condizioni d'Uso</strong>. Riconosco di essere l'unico responsabile per i contenuti che carico.
+                    </label>
+                </div>
+                <div class="terms-buttons">
+                    <button class="terms-decline-btn" onclick="declineTerms()">❌ Rifiuta</button>
+                    <button class="terms-accept-btn" id="termsAcceptBtn" disabled onclick="acceptTerms()">✅ Accetta e Continua</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Menu Laterale -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -1035,7 +1698,8 @@
             <li><a href="#" onclick="switchTab('vote')" class="nav-link" data-tab="vote">🗳️ Vota Foto</a></li>
             <li><a href="#" onclick="switchTab('history')" class="nav-link" data-tab="history">📊 Cronologia</a></li>
             <li><a href="#" onclick="switchTab('leaderboard')" class="nav-link" data-tab="leaderboard">🏆 Classifica</a></li>
-            <li><a href="#" onclick="switchTab('achievements')" class="nav-link" data-tab="achievements">🎯 Achievement</a></li>
+			<li><a href="#" onclick="switchTab('achievements')" class="nav-link" data-tab="achievements">🎯 Achievement</a></li>
+            <li><a href="#" onclick="switchTab('battle')" class="nav-link" data-tab="battle">⚔️ Battaglia Smash <span class="new-badge">NEW</span></a></li>
             <li><a href="#" onclick="switchTab('moderation')" class="nav-link" data-tab="moderation">🛡️ Moderazione</a></li>
             <li><a href="#" onclick="switchTab('settings')" class="nav-link" data-tab="settings">⚙️ Impostazioni</a></li>
         </ul>
@@ -1166,6 +1830,17 @@
                     <div class="loading" id="loadingIndicator">
                         Caricamento foto in corso...
                     </div>
+                </div>
+            </div>
+        </div>
+		<!-- TAB BATTAGLIA -->
+        <div class="tab-content" id="battle-tab">
+            <div class="battle-container">
+                <h2 style="text-align: center; margin-bottom: 20px;">⚔️ Battaglia Smash</h2>
+                <p style="text-align: center; color: #666; margin-bottom: 30px;">Carica la tua foto e sfida gli altri! La battaglia dura 1 ora.</p>
+                
+                <div id="battleView">
+                    <div class="loading">Caricamento battaglia...</div>
                 </div>
             </div>
         </div>
@@ -1315,7 +1990,29 @@
     </div>
     
     <div class="notification" id="notification"></div>
-
+<!-- Modal per selezione foto battaglia -->
+    <div class="modal" id="battlePhotoModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Seleziona Foto per la Battaglia</h3>
+                <button class="close-modal" onclick="closeModal('battlePhotoModal')">×</button>
+            </div>
+            <div>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-primary" style="flex: 1;" onclick="showUserPhotosForBattle()">
+                        ✅ Le Mie Foto
+                    </button>
+                    <button class="btn btn-secondary" style="flex: 1;" onclick="showUploadForBattle()">
+                        📸 Carica Nuova
+                    </button>
+                </div>
+                
+                <div id="battlePhotoSelector">
+                    <div class="loading">Caricamento...</div>
+                </div>
+            </div>
+        </div>
+    </div>
     <script>
         // CONFIGURAZIONE SUPABASE
         const SUPABASE_URL = 'https://rreyuxxnyhhahwkjxfiv.supabase.co';
@@ -1334,7 +2031,10 @@
         let currentLeaderboardFilter = 'all';
         let achievements = JSON.parse(localStorage.getItem('achievements') || '{}');
         let currentPhotoForReport = null;
-        
+        // SISTEMA BATTAGLIA
+        let currentBattle = null;
+        let battleTimer = null;
+        let currentBattleSlot = null;
         // SISTEMA MODERAZIONE
         let moderationAttempts = 3;
         let isModerationAuthenticated = false;
@@ -1623,18 +2323,38 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            initUserStats();
-            initEventListeners();
-            loadPhotosForVoting();
-            loadAchievements();
-            loadStats();
-            initDarkMode();
-            
-            document.getElementById('darkModeToggle').addEventListener('change', function() {
-                updateDarkMode(this.checked);
-            });
+document.addEventListener('DOMContentLoaded', function() {
+    // Controlla accettazione termini
+    if (!checkTermsAcceptance()) {
+        return;
+    }
+    
+    // Event listener per checkbox termini
+    const termsCheckbox = document.getElementById('termsCheckbox');
+    const termsAcceptBtn = document.getElementById('termsAcceptBtn');
+    
+    if (termsCheckbox && termsAcceptBtn) {
+        termsCheckbox.addEventListener('change', function() {
+            termsAcceptBtn.disabled = !this.checked;
+            console.log('Checkbox cambiato:', this.checked); // Per debug
         });
+    }
+    
+    // Event listener per dark mode
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
+        darkModeToggle.addEventListener('change', function() {
+            updateDarkMode(this.checked);
+        });
+    }
+    
+    initUserStats();
+    initEventListeners();
+    loadPhotosForVoting();
+    loadAchievements();
+    loadStats();
+    initDarkMode();
+});
         
         function handleFileSelection(file) {
             if (!file) {
@@ -1947,8 +2667,37 @@
                         };
                     })
                 );
+                // Carica battaglie attive
+const { data: activeBattles } = await supabase
+    .from('battles')
+    .select('*')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false });
+
+let battlesHTML = '';
+if (activeBattles && activeBattles.length > 0) {
+    battlesHTML = `
+        <div class="settings-section" style="margin-bottom: 30px;">
+            <h3>⚔️ Battaglie Attive</h3>
+            ${activeBattles.map(battle => `
+                <div class="reported-photo">
+                    <h4>Battaglia ID: ${battle.id.substring(0, 8)}...</h4>
+                    <p><strong>Voti Foto 1:</strong> ${battle.votes1} | <strong>Voti Foto 2:</strong> ${battle.votes2}</p>
+                    <p><strong>Inizio:</strong> ${new Date(battle.start_time).toLocaleString('it-IT')}</p>
+                    <p><strong>Fine prevista:</strong> ${new Date(battle.end_time).toLocaleString('it-IT')}</p>
+                    <div class="admin-actions">
+                        <button class="admin-btn reject-btn" onclick="forceEndBattleFromMod('${battle.id}')">
+                            ⚠️ Termina Battaglia
+                        </button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+reportedPhotosList.innerHTML = battlesHTML + photosWithReports.map(photo => {
                 
-                reportedPhotosList.innerHTML = photosWithReports.map(photo => {
                     return `
                         <div class="reported-photo">
                             <div style="display: flex; align-items: center; margin-bottom: 15px;">
@@ -2665,12 +3414,15 @@
             });
         }
 
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        }
+   function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    
+    if (sidebar && overlay) {
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+}
         
         function switchTab(tabName) {
             if (window.innerWidth <= 768) {
@@ -2714,8 +3466,789 @@
                 loadReportedPhotos();
             } else if (tabName === 'settings') {
                 loadStats();
+            } else if (tabName === 'battle') {
+                loadCurrentBattle();
             }
         }
+		// ============================================
+        // GESTIONE TERMINI E CONDIZIONI
+        // ============================================
+        
+        function checkTermsAcceptance() {
+            const termsAccepted = localStorage.getItem('termsAccepted');
+            if (!termsAccepted || termsAccepted !== 'true') {
+                document.getElementById('termsOverlay').style.display = 'flex';
+                return false;
+            }
+            return true;
+        }
+
+        function acceptTerms() {
+            localStorage.setItem('termsAccepted', 'true');
+            localStorage.setItem('termsAcceptedDate', new Date().toISOString());
+            document.getElementById('termsOverlay').style.display = 'none';
+            showNotification('✅ Termini accettati! Benvenuto!', false, 'success');
+        }
+
+        function declineTerms() {
+            alert('Per utilizzare la piattaforma è necessario accettare i Termini e Condizioni.');
+            window.location.href = 'about:blank';
+        }
+
+        function showTerms() {
+            document.getElementById('termsOverlay').style.display = 'flex';
+        }
+
+        // ============================================
+        // SISTEMA BATTAGLIE
+        // ============================================
+        
+	async function loadCurrentBattle() {
+    const battleView = document.getElementById('battleView');
+    if (!battleView) {
+        console.error('battleView non trovato');
+        return;
+    }
+    
+    battleView.innerHTML = '<div class="loading">Caricamento battaglia...</div>';
+    
+    try {
+        // Carica battaglie attive o in setup
+        const { data: battleData, error: battleError } = await supabase
+            .from('battles')
+            .select('*')
+            .in('status', ['setting_up', 'active'])
+            .order('created_at', { ascending: false })
+            .limit(1);
+        
+        // Se c'è un errore diverso da "nessun risultato", lancialo
+        if (battleError && battleError.code !== 'PGRST116') {
+            console.error('Errore query battles:', battleError);
+            throw battleError;
+        }
+        
+        // Se non ci sono battaglie, mostra il setup
+        if (!battleData || battleData.length === 0) {
+            console.log('Nessuna battaglia trovata, mostro setup');
+            await showBattleSetup();
+            return;
+        }
+        
+        // Prendi la prima battaglia
+        const battle = battleData[0];
+        console.log('Battaglia trovata:', battle);
+        
+        // Carica foto1 se esiste
+        if (battle.photo1_id) {
+            const { data: photo1, error: photo1Error } = await supabase
+                .from('photos')
+                .select('*')
+                .eq('id', battle.photo1_id)
+                .single();
+            
+            if (!photo1Error && photo1) {
+                battle.photo1 = photo1;
+            }
+        }
+        
+        // Carica foto2 se esiste
+        if (battle.photo2_id) {
+            const { data: photo2, error: photo2Error } = await supabase
+                .from('photos')
+                .select('*')
+                .eq('id', battle.photo2_id)
+                .single();
+            
+            if (!photo2Error && photo2) {
+                battle.photo2 = photo2;
+            }
+        }
+        
+        // Salva la battaglia corrente
+        currentBattle = battle;
+        
+        // Mostra la battaglia
+        await displayBattle(battle);
+        
+    } catch (error) {
+        console.error('Errore caricamento battaglia:', error);
+        battleView.innerHTML = `
+            <div class="empty-state">
+                <p>❌ Errore nel caricamento della battaglia</p>
+                <p style="color: #666; font-size: 14px;">${error.message}</p>
+                <button class="btn btn-primary" onclick="loadCurrentBattle()" style="margin-top: 15px;">
+                    🔄 Riprova
+                </button>
+            </div>
+        `;
+    }
+}
+        
+async function showBattleSetup() {
+    const battleView = document.getElementById('battleView');
+    
+    try {
+        // Controlla se c'è una battaglia in setup
+        const { data: existingBattle } = await supabase
+            .from('battles')
+            .select('*')
+            .eq('status', 'setting_up')
+            .single();
+        
+        // Controlla quante foto ha caricato l'utente
+        const userBattlePhotos = JSON.parse(localStorage.getItem('userBattlePhotos') || '[]');
+        const hasUploadedPhoto = userBattlePhotos.length > 0;
+        
+        if (existingBattle) {
+            // C'è una battaglia in attesa
+            let photoToShow = null;
+            let waitingSlot = null;
+            
+            if (existingBattle.photo1_id && !existingBattle.photo2_id) {
+                // Foto 1 in attesa
+                const { data: photo } = await supabase
+                    .from('photos')
+                    .select('*')
+                    .eq('id', existingBattle.photo1_id)
+                    .single();
+                photoToShow = photo;
+                waitingSlot = 1;
+            } else if (!existingBattle.photo1_id && existingBattle.photo2_id) {
+                // Foto 2 in attesa
+                const { data: photo } = await supabase
+                    .from('photos')
+                    .select('*')
+                    .eq('id', existingBattle.photo2_id)
+                    .single();
+                photoToShow = photo;
+                waitingSlot = 2;
+            }
+            
+            if (photoToShow) {
+                battleView.innerHTML = `
+                    <div class="battle-arena">
+                        <div class="battle-slot filled">
+                            <img src="${photoToShow.image_url}" class="battle-photo" onerror="this.src='https://via.placeholder.com/300'">
+                            <h4>${photoToShow.gender === 'male' ? '👦 Ragazzo' : '👧 Ragazza'}</h4>
+                            <p>⏳ In attesa di avversario...</p>
+                        </div>
+                        
+                        <div class="battle-vs">VS</div>
+                        
+                        <div class="battle-slot ${hasUploadedPhoto ? '' : ''}" ${hasUploadedPhoto ? '' : 'onclick="openBattlePhotoSelector(' + (waitingSlot === 1 ? 2 : 1) + ')"'}>
+                            <div class="battle-slot-empty">
+                                <h3>${hasUploadedPhoto ? '⏳' : '+'}</h3>
+                                <p>${hasUploadedPhoto ? 'Hai già caricato una foto per questa battaglia' : 'Clicca per sfidare questa foto!'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="battle-stats">
+                        <p style="text-align: center; color: #666;">
+                            ${hasUploadedPhoto ? '⏳ In attesa che un altro utente aggiunga una foto...' : '💡 Clicca sul secondo slot per sfidare!'}
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+        }
+        
+        // Nessuna battaglia in attesa - mostra setup normale
+        battleView.innerHTML = `
+            <div class="battle-arena">
+                <div class="battle-slot ${hasUploadedPhoto ? '' : ''}" ${hasUploadedPhoto ? '' : 'onclick="openBattlePhotoSelector(1)"'}>
+                    <div class="battle-slot-empty">
+                        <h3>${hasUploadedPhoto ? '⏳' : '+'}</h3>
+                        <p>${hasUploadedPhoto ? 'Hai già una foto in attesa' : 'Clicca per aggiungere una foto'}</p>
+                    </div>
+                </div>
+                
+                <div class="battle-vs">VS</div>
+                
+                <div class="battle-slot">
+                    <div class="battle-slot-empty">
+                        <h3>?</h3>
+                        <p>In attesa...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="battle-stats">
+                <p style="text-align: center; color: #666;">
+                    ${hasUploadedPhoto ? '⏳ In attesa di altri partecipanti...' : '💡 Aggiungi una foto per iniziare una battaglia!'}
+                </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="loadBattleHistory()">📜 Storico Battaglie</button>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('Errore setup battaglia:', error);
+        battleView.innerHTML = '<div class="empty-state"><p>Errore nel caricamento</p></div>';
+    }
+}
+async function displayBattle(battle) {
+    const battleView = document.getElementById('battleView');
+    
+    if (!battle.photo1 || !battle.photo2) {
+        console.log('Foto mancanti, mostro setup');
+        await showBattleSetup();
+        return;
+    }
+    
+    const totalVotes = battle.votes1 + battle.votes2;
+    const perc1 = totalVotes > 0 ? (battle.votes1 / totalVotes) * 100 : 50;
+    const perc2 = totalVotes > 0 ? (battle.votes2 / totalVotes) * 100 : 50;
+    
+    const endTime = new Date(battle.end_time).getTime();
+    const now = Date.now();
+    const remaining = Math.max(0, endTime - now);
+    
+    const hours = Math.floor(remaining / (1000 * 60 * 60));
+    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+    
+    const userVote = localStorage.getItem('battle_vote_' + battle.id);
+    
+    battleView.innerHTML = `
+        <div class="battle-timer">
+            <h3>⏱️ Battaglia in Corso</h3>
+            <div class="time">${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}</div>
+        </div>
+        
+        <div class="battle-arena">
+            <div class="battle-slot filled ${battle.votes1 > battle.votes2 ? 'winning' : ''}">
+                <img src="${battle.photo1.image_url}" class="battle-photo" onerror="this.src='https://via.placeholder.com/300'">
+                <h4>${battle.photo1.gender === 'male' ? '👦' : '👧'}</h4>
+                <div class="battle-stat-item">
+                    <div class="value">${battle.votes1}</div>
+                    <div class="label">Voti</div>
+                </div>
+                ${!userVote ? '<button class="battle-vote-btn left" onclick="voteBattle(\'' + battle.id + '\', 1)">🔥 Vota Questa</button>' : ''}
+            </div>
+            
+            <div class="battle-vs">VS</div>
+            
+            <div class="battle-slot filled ${battle.votes2 > battle.votes1 ? 'winning' : ''}">
+                <img src="${battle.photo2.image_url}" class="battle-photo" onerror="this.src='https://via.placeholder.com/300'">
+                <h4>${battle.photo2.gender === 'male' ? '👦' : '👧'}</h4>
+                <div class="battle-stat-item">
+                    <div class="value">${battle.votes2}</div>
+                    <div class="label">Voti</div>
+                </div>
+                ${!userVote ? '<button class="battle-vote-btn right" onclick="voteBattle(\'' + battle.id + '\', 2)">🔥 Vota Questa</button>' : ''}
+            </div>
+        </div>
+        
+        <div class="battle-progress">
+            <div class="battle-progress-bar">
+                <div class="battle-progress-fill left" style="width: ${perc1}%">${Math.round(perc1)}%</div>
+                <div class="battle-progress-fill right" style="width: ${perc2}%">${Math.round(perc2)}%</div>
+            </div>
+        </div>
+        
+        ${userVote ? `
+            <div style="text-align: center; margin: 20px 0; padding: 15px; background: #f0f4ff; border-radius: 10px;">
+                <p><strong>✅ Hai già votato!</strong></p>
+                <p style="color: #666;">Attendi la fine della battaglia per vedere il vincitore</p>
+            </div>
+        ` : ''}
+        
+        <div class="battle-stats">
+            <div class="battle-stat-item">
+                <div class="label">Condizione 1</div>
+                <div class="value" style="font-size: 16px;">🎯 Primo a 50 voti</div>
+            </div>
+            <div class="battle-stat-item">
+                <div class="label">Condizione 2</div>
+                <div class="value" style="font-size: 16px;">⏱️ Fine tempo (min 5 voti)</div>
+            </div>
+            <div class="battle-stat-item">
+                <div class="label">Condizione 3</div>
+                <div class="value" style="font-size: 16px;">💥 +20 voti di diff (min 20 tot)</div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-secondary" onclick="loadBattleHistory()">📜 Storico Battaglie</button>
+        </div>
+    `;
+    
+    if (battle.status === 'active') {
+        startBattleTimer(battle.id);
+    }
+}
+
+function openBattlePhotoSelector(slot) {
+    currentBattleSlot = slot;
+    document.getElementById('battlePhotoModal').style.display = 'flex';
+    showUserPhotosForBattle();
+}
+
+async function showUserPhotosForBattle() {
+    const selector = document.getElementById('battlePhotoSelector');
+    selector.innerHTML = '<div class="loading">Caricamento foto...</div>';
+    
+    try {
+        const { data: photos, error } = await supabase
+            .from('photos')
+            .select('*')
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(20);
+        
+        if (error) throw error;
+        
+        if (!photos || photos.length === 0) {
+            selector.innerHTML = `
+                <div class="empty-state">
+                    <p>Nessuna foto disponibile</p>
+                    <button class="btn btn-primary" onclick="showUploadForBattle()">📸 Carica una Nuova Foto</button>
+                </div>
+            `;
+            return;
+        }
+        
+        selector.innerHTML = `
+            <div class="photo-selector-grid">
+                ${photos.map(photo => `
+                    <div class="photo-selector-item" onclick="selectPhotoForBattle('${photo.id}')">
+                        <img src="${photo.image_url}" onerror="this.src='https://via.placeholder.com/150'">
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('Errore:', error);
+        selector.innerHTML = '<div class="empty-state"><p>Errore nel caricamento</p></div>';
+    }
+}
+
+async function selectPhotoForBattle(photoId) {
+    try {
+        // Controlla quante foto ha già caricato l'utente
+        const userBattlePhotos = JSON.parse(localStorage.getItem('userBattlePhotos') || '[]');
+        
+        if (userBattlePhotos.length > 0) {
+            showNotification('⚠️ Puoi caricare solo 1 foto per battaglia!', false, 'warning');
+            closeModal('battlePhotoModal');
+            return;
+        }
+        
+        // Verifica battaglia esistente
+        const { data: existingBattle, error: fetchError } = await supabase
+            .from('battles')
+            .select('*')
+            .in('status', ['setting_up', 'active'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+        
+        if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+        
+        if (!existingBattle) {
+            // Crea nuova battaglia
+            const endTime = new Date(Date.now() + 60 * 60 * 1000);
+            
+            const newBattle = currentBattleSlot === 1 ? {
+                photo1_id: photoId,
+                photo2_id: null,
+                status: 'setting_up',
+                votes1: 0,
+                votes2: 0,
+                start_time: new Date().toISOString(),
+                end_time: endTime.toISOString()
+            } : {
+                photo1_id: null,
+                photo2_id: photoId,
+                status: 'setting_up',
+                votes1: 0,
+                votes2: 0,
+                start_time: new Date().toISOString(),
+                end_time: endTime.toISOString()
+            };
+            
+            const { error: insertError } = await supabase
+                .from('battles')
+                .insert([newBattle]);
+            
+            if (insertError) throw insertError;
+            
+            // Salva localmente
+            userBattlePhotos.push({ battleId: 'new', photoId: photoId, timestamp: Date.now() });
+            localStorage.setItem('userBattlePhotos', JSON.stringify(userBattlePhotos));
+            
+            showNotification('✅ Foto aggiunta! In attesa di avversario...', false, 'success');
+            
+        } else {
+            // Aggiungi alla battaglia esistente
+            const updateField = currentBattleSlot === 1 ? 'photo1_id' : 'photo2_id';
+            const otherField = currentBattleSlot === 1 ? 'photo2_id' : 'photo1_id';
+            
+            const shouldActivate = existingBattle[otherField] !== null;
+            
+            const { error: updateError } = await supabase
+                .from('battles')
+                .update({
+                    [updateField]: photoId,
+                    status: shouldActivate ? 'active' : 'setting_up'
+                })
+                .eq('id', existingBattle.id);
+            
+            if (updateError) throw updateError;
+            
+            // Salva localmente
+            userBattlePhotos.push({ battleId: existingBattle.id, photoId: photoId, timestamp: Date.now() });
+            localStorage.setItem('userBattlePhotos', JSON.stringify(userBattlePhotos));
+            
+            if (shouldActivate) {
+                showNotification('🎉 Battaglia iniziata! Durata: 1 ora', false, 'success');
+            } else {
+                showNotification('✅ Foto aggiunta!', false, 'success');
+            }
+        }
+        
+        closeModal('battlePhotoModal');
+        loadCurrentBattle();
+        
+    } catch (error) {
+        console.error('Errore selezione foto:', error);
+        showNotification('❌ Errore: ' + error.message, true);
+    }
+}
+
+async function voteBattle(battleId, side) {
+    try {
+        const voteKey = 'battle_vote_' + battleId;
+        
+        if (localStorage.getItem(voteKey)) {
+            showNotification('⚠️ Hai già votato in questa battaglia!', false, 'warning');
+            return;
+        }
+        
+        const { data: battle, error: fetchError } = await supabase
+            .from('battles')
+            .select('*')
+            .eq('id', battleId)
+            .single();
+        
+        if (fetchError) throw fetchError;
+        
+        const voteField = side === 1 ? 'votes1' : 'votes2';
+        const newVotes = (battle[voteField] || 0) + 1;
+        
+        const updateData = {};
+        updateData[voteField] = newVotes;
+        
+        const { error: updateError } = await supabase
+            .from('battles')
+            .update(updateData)
+            .eq('id', battleId);
+        
+        if (updateError) throw updateError;
+        
+        localStorage.setItem(voteKey, side.toString());
+        
+        showNotification('✅ Voto registrato!', false, 'success');
+        
+        await checkBattleEnd(battleId);
+        loadCurrentBattle();
+        
+    } catch (error) {
+        console.error('Errore voto:', error);
+        showNotification('❌ Errore: ' + error.message, true);
+    }
+}
+
+async function checkBattleEnd(battleId) {
+    try {
+        // Carica battaglia
+        const { data: battle, error } = await supabase
+            .from('battles')
+            .select('*')
+            .eq('id', battleId)
+            .single();
+        
+        if (error || !battle || battle.status !== 'active') {
+            return;
+        }
+        
+        const totalVotes = battle.votes1 + battle.votes2;
+        const voteDiff = Math.abs(battle.votes1 - battle.votes2);
+        const timeRemaining = new Date(battle.end_time).getTime() - Date.now();
+        
+        let winner = null;
+        let reason = null;
+        
+        // Condizione 1: Primo a 50 voti
+        if (battle.votes1 >= 50) {
+            winner = 1;
+            reason = 'first_to_50';
+        } else if (battle.votes2 >= 50) {
+            winner = 2;
+            reason = 'first_to_50';
+        }
+        // Condizione 2: Differenza 20 con minimo 20 totali
+        else if (totalVotes >= 20 && voteDiff >= 20) {
+            winner = battle.votes1 > battle.votes2 ? 1 : 2;
+            reason = 'vote_difference';
+        }
+        // Condizione 3: Tempo scaduto con minimo 5 voti
+        else if (timeRemaining <= 0 && totalVotes >= 5) {
+            winner = battle.votes1 > battle.votes2 ? 1 : 2;
+            reason = 'time_expired';
+        }
+        
+        // Se c'è un vincitore, termina la battaglia
+        if (winner) {
+            await endBattle(battleId, winner, reason);
+        }
+        
+    } catch (error) {
+        console.error('Errore controllo fine battaglia:', error);
+    }
+}
+
+async function endBattle(battleId, winner, reason) {
+    try {
+        const { data: battle, error: fetchError } = await supabase
+            .from('battles')
+            .select('*')
+            .eq('id', battleId)
+            .single();
+        
+        if (fetchError) throw fetchError;
+        
+        const winnerPhotoId = winner === 1 ? battle.photo1_id : battle.photo2_id;
+        const loserPhotoId = winner === 1 ? battle.photo2_id : battle.photo1_id;
+        
+        // Aggiorna battaglia
+        await supabase
+            .from('battles')
+            .update({
+                status: 'completed',
+                winner: winner,
+                end_reason: reason,
+                completed_at: new Date().toISOString()
+            })
+            .eq('id', battleId);
+        
+        // Aggiorna foto vincitrice (+5 smash, +1 battle_wins)
+        const { data: winnerPhoto } = await supabase
+            .from('photos')
+            .select('smash_count, battle_wins')
+            .eq('id', winnerPhotoId)
+            .single();
+        
+        await supabase
+            .from('photos')
+            .update({
+                smash_count: (winnerPhoto.smash_count || 0) + 5,
+                battle_wins: (winnerPhoto.battle_wins || 0) + 1
+            })
+            .eq('id', winnerPhotoId);
+        
+        // Aggiorna foto perdente (+2 smash)
+        const { data: loserPhoto } = await supabase
+            .from('photos')
+            .select('smash_count')
+            .eq('id', loserPhotoId)
+            .single();
+        
+        await supabase
+            .from('photos')
+            .update({
+                smash_count: (loserPhoto.smash_count || 0) + 2
+            })
+            .eq('id', loserPhotoId);
+        
+        const reasonText = {
+            'first_to_50': '🏆 Primo a 50 voti',
+            'vote_difference': '💥 Differenza di 20 voti',
+            'time_expired': '⏱️ Tempo scaduto'
+        };
+        
+        showNotification(`🎉 Battaglia terminata! Vincitore: Foto ${winner}. ${reasonText[reason]}`, false, 'success');
+        // Pulisci storage utente se la battaglia è finita
+const userBattlePhotos = JSON.parse(localStorage.getItem('userBattlePhotos') || '[]');
+const filtered = userBattlePhotos.filter(item => item.battleId !== battleId);
+localStorage.setItem('userBattlePhotos', JSON.stringify(filtered));
+        setTimeout(() => {
+            loadCurrentBattle();
+        }, 3000);
+        
+    } catch (error) {
+        console.error('Errore fine battaglia:', error);
+    }
+}
+async function forceEndBattleFromMod(battleId) {
+    if (!confirm('Sei sicuro di voler terminare questa battaglia immediatamente?')) {
+        return;
+    }
+    
+    try {
+        const { data: battle, error } = await supabase
+            .from('battles')
+            .select('*')
+            .eq('id', battleId)
+            .single();
+        
+        if (error) throw error;
+        
+        // Determina vincitore
+        const winner = battle.votes1 >= battle.votes2 ? 1 : 2;
+        
+        await endBattle(battleId, winner, 'moderator_ended');
+        
+        showNotification('✅ Battaglia terminata dai moderatori!', false, 'success');
+        loadReportedPhotos();
+        
+    } catch (error) {
+        console.error('Errore termine battaglia:', error);
+        showNotification('❌ Errore: ' + error.message, true);
+    }
+}
+
+function startBattleTimer(battleId) {
+    if (battleTimer) clearInterval(battleTimer);
+    
+    battleTimer = setInterval(async () => {
+        await checkBattleEnd(battleId);
+        
+        const { data: battle } = await supabase
+            .from('battles')
+            .select('*')
+            .eq('id', battleId)
+            .single();
+        
+        if (!battle || battle.status !== 'active') {
+            clearInterval(battleTimer);
+            return;
+        }
+        
+        const endTime = new Date(battle.end_time).getTime();
+        const now = Date.now();
+        const remaining = Math.max(0, endTime - now);
+        
+        const hours = Math.floor(remaining / (1000 * 60 * 60));
+        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+        
+        const timerEl = document.querySelector('.battle-timer .time');
+        if (timerEl) {
+            timerEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+        
+    }, 1000);
+}
+
+async function loadBattleHistory() {
+    const battleView = document.getElementById('battleView');
+    battleView.innerHTML = '<div class="loading">Caricamento storico...</div>';
+    
+    try {
+        const { data: battlesList, error } = await supabase
+            .from('battles')
+            .select('*')
+            .eq('status', 'completed')
+            .order('created_at', { ascending: false })
+            .limit(10);
+        
+        if (error) {
+            console.error('Errore caricamento storico:', error);
+            throw error;
+        }
+        
+        if (!battlesList || battlesList.length === 0) {
+            battleView.innerHTML = `
+                <div class="empty-state">
+                    <h3>📜 Storico Battaglie</h3>
+                    <p>Nessuna battaglia completata</p>
+                    <button class="btn btn-primary" onclick="loadCurrentBattle()">🔙 Torna</button>
+                </div>
+            `;
+            return;
+        }
+        
+        // Carica le foto per ogni battaglia
+        for (let battle of battlesList) {
+            if (battle.photo1_id) {
+                const { data: photo1 } = await supabase
+                    .from('photos')
+                    .select('*')
+                    .eq('id', battle.photo1_id)
+                    .single();
+                battle.photo1 = photo1;
+            }
+            
+            if (battle.photo2_id) {
+                const { data: photo2 } = await supabase
+                    .from('photos')
+                    .select('*')
+                    .eq('id', battle.photo2_id)
+                    .single();
+                battle.photo2 = photo2;
+            }
+        }
+        
+        const reasonText = {
+            'first_to_50': '🏆 Primo a 50 voti',
+            'vote_difference': '💥 Differenza di 20 voti',
+            'time_expired': '⏱️ Tempo scaduto',
+			'moderator_ended': '🛡️ Terminata dai moderatori'
+        };
+        
+        battleView.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <button class="btn btn-primary" onclick="loadCurrentBattle()">🔙 Torna alla Battaglia</button>
+            </div>
+            
+            <h3 style="margin-bottom: 20px;">📜 Storico Battaglie</h3>
+            
+            ${battlesList.map(battle => `
+                <div class="battle-history-item">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <h4>Battaglia ${new Date(battle.created_at).toLocaleDateString('it-IT')}</h4>
+                        <span>${reasonText[battle.end_reason] || 'Completata'}</span>
+                    </div>
+                    
+                    <div class="battle-history-photos">
+                        <div class="battle-history-photo-container ${battle.winner === 1 ? 'winner' : ''}">
+                            <img src="${battle.photo1?.image_url || 'https://via.placeholder.com/200'}" onerror="this.src='https://via.placeholder.com/200'">
+                            <div>${battle.votes1} voti</div>
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; font-size: 24px;">VS</div>
+                        
+                        <div class="battle-history-photo-container ${battle.winner === 2 ? 'winner' : ''}">
+                            <img src="${battle.photo2?.image_url || 'https://via.placeholder.com/200'}" onerror="this.src='https://via.placeholder.com/200'">
+                            <div>${battle.votes2} voti</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        `;
+        
+    } catch (error) {
+        console.error('Errore storico battaglie:', error);
+        battleView.innerHTML = `
+            <div class="empty-state">
+                <p>❌ Errore nel caricamento dello storico</p>
+                <p style="color: #666; font-size: 14px;">${error.message}</p>
+                <button class="btn btn-primary" onclick="loadCurrentBattle()">🔙 Torna</button>
+            </div>
+        `;
+    }
+}
+
+function showUploadForBattle() {
+    closeModal('battlePhotoModal');
+    switchTab('upload');
+    showNotification('📸 Carica una foto e poi torna alla sezione Battaglia!', false, 'info');
+}
 
         function exportData() {
             const data = {
@@ -2774,5 +4307,6 @@
             reader.readAsText(file);
         }
     </script>
+
 </body>
 </html>
