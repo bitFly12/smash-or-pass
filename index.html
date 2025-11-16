@@ -2324,22 +2324,37 @@ body.dark-mode .terms-checkbox-container label {
         }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Controlla accettazione termini
+ // Controlla accettazione termini
     if (!checkTermsAcceptance()) {
+        // Se i termini non sono accettati, setup degli event listeners per i termini
+        setupTermsEventListeners();
         return;
     }
     
-    // Event listener per checkbox termini
+    // Se i termini sono già accettati, procedi con il normale setup
+    setupMainApp();
+});
+
+function setupTermsEventListeners() {
     const termsCheckbox = document.getElementById('termsCheckbox');
     const termsAcceptBtn = document.getElementById('termsAcceptBtn');
     
     if (termsCheckbox && termsAcceptBtn) {
+        // Rimuovi qualsiasi event listener esistente e aggiungine uno nuovo
         termsCheckbox.addEventListener('change', function() {
             termsAcceptBtn.disabled = !this.checked;
-            console.log('Checkbox cambiato:', this.checked); // Per debug
+            console.log('Checkbox cambiato:', this.checked);
         });
+        
+        // Forza un controllo iniziale
+        termsAcceptBtn.disabled = !termsCheckbox.checked;
+    } else {
+        console.error('Elementi termini non trovati!');
     }
-    
+}
+
+function setupMainApp()
+    {
     // Event listener per dark mode
     const darkModeToggle = document.getElementById('darkModeToggle');
     if (darkModeToggle) {
@@ -2354,7 +2369,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAchievements();
     loadStats();
     initDarkMode();
-});
+};
         
         function handleFileSelection(file) {
             if (!file) {
@@ -3483,17 +3498,49 @@ reportedPhotosList.innerHTML = battlesHTML + photosWithReports.map(photo => {
             return true;
         }
 
-        function acceptTerms() {
-            localStorage.setItem('termsAccepted', 'true');
-            localStorage.setItem('termsAcceptedDate', new Date().toISOString());
-            document.getElementById('termsOverlay').style.display = 'none';
-            showNotification('✅ Termini accettati! Benvenuto!', false, 'success');
-        }
+ function acceptTerms() {
+    try {
+        localStorage.setItem('termsAccepted', 'true');
+        localStorage.setItem('termsAcceptedDate', new Date().toISOString());
+        document.getElementById('termsOverlay').style.display = 'none';
+        showNotification('✅ Termini accettati! Benvenuto!', false, 'success');
+        
+        // Avvia l'applicazione principale dopo l'accettazione
+        setupMainApp();
+    } catch (error) {
+        console.error('Errore durante l\'accettazione dei termini:', error);
+        showNotification('Errore durante l\'accettazione dei termini. Riprova.', true);
+    }
+}
+
+
 
         function declineTerms() {
             alert('Per utilizzare la piattaforma è necessario accettare i Termini e Condizioni.');
             window.location.href = 'about:blank';
         }
+		function setupTermsEventListeners() {
+    const termsCheckbox = document.getElementById('termsCheckbox');
+    const termsAcceptBtn = document.getElementById('termsAcceptBtn');
+    
+    if (termsCheckbox && termsAcceptBtn) {
+        // Rimuovi event listener esistenti per evitare duplicati
+        const newCheckbox = termsCheckbox.cloneNode(true);
+        const newButton = termsAcceptBtn.cloneNode(true);
+        
+        termsCheckbox.parentNode.replaceChild(newCheckbox, termsCheckbox);
+        termsAcceptBtn.parentNode.replaceChild(newButton, termsAcceptBtn);
+        
+        // Aggiungi nuovo event listener
+        newCheckbox.addEventListener('change', function() {
+            document.getElementById('termsAcceptBtn').disabled = !this.checked;
+            console.log('Checkbox termini cambiato:', this.checked);
+        });
+        
+        // Forza un controllo iniziale
+        document.getElementById('termsAcceptBtn').disabled = !newCheckbox.checked;
+    }
+}
 
         function showTerms() {
             document.getElementById('termsOverlay').style.display = 'flex';
